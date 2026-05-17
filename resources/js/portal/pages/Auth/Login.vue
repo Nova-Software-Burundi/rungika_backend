@@ -56,10 +56,7 @@ const submit = async () => {
         // 1. Store login calls ensureCsrfCookie and api.post('/portal/login')
         await store.login(identifier.value, password.value)
 
-        // 2. Redirect to dashboard
-        // Note: Router will handle the /portal/ prefix automatically
-        // if your history is set to createWebHistory('/portal/')
-        router.push('/dashboard')
+        router.push('/transfers')
 
     } catch (e) {
         // Handle Laravel validation errors (422) or generic errors

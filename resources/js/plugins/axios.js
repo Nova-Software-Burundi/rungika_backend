@@ -2,7 +2,7 @@ import axios from "axios";
 
 // 1. Export the 'api' instance
 export const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "https://martin-logistics.nova.bi/api",
+    baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
     withCredentials: true,
     withXSRFToken: true, // <--- This is the crucial modern Axios setting
     xsrfCookieName: "XSRF-TOKEN",
@@ -15,7 +15,7 @@ export const api = axios.create({
 
 // 2. Export the CSRF function
 export async function ensureCsrfCookie() {
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL || "https://martin-logistics.test").replace('/api', '');
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace('/api', '');
     return axios.get(`${baseUrl}/sanctum/csrf-cookie`, { withCredentials: true });
 }
 

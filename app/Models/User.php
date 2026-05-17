@@ -91,4 +91,14 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return $this->hasOne(Driver::class);
     }
 
+    public function initiatedMoneyTransfers()
+    {
+        return $this->hasMany(MoneyTransfer::class, 'initiated_by');
+    }
+
+    public function assignedMoneyTransfers()
+    {
+        return $this->hasMany(MoneyTransfer::class, 'assigned_agent_id');
+    }
+
 }

@@ -3,6 +3,10 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MobileAuthController;
 use App\Http\Controllers\Api\MobileTripController;
+use App\Http\Controllers\Api\MoneyTransferController;
+use App\Http\Controllers\Api\Support\SupportCategoryController;
+use App\Http\Controllers\Api\Support\SupportTicketController;
+use App\Http\Controllers\Api\Support\SupportTicketMessageController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\ComplianceSummaryController;
@@ -120,6 +124,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard/overview', [DashboardController::class, 'getOverview']);
         Route::get('/dashboard/analytics', [DashboardController::class, 'getAnalytics']);
         Route::get('/dashboard/operational-status', [DashboardController::class, 'getOperationalStatus']);
+
+        // Money Transfer Workflow
+        Route::get('/transfers/stats', [MoneyTransferController::class, 'stats']);
+        Route::get('/transfers', [MoneyTransferController::class, 'index']);
+        Route::post('/transfers', [MoneyTransferController::class, 'store']);
+        Route::get('/transfers/{moneyTransfer}', [MoneyTransferController::class, 'show']);
+        Route::post('/transfers/{moneyTransfer}/usdt-proof', [MoneyTransferController::class, 'uploadUsdtProof']);
+        Route::post('/transfers/{moneyTransfer}/confirm-usdt', [MoneyTransferController::class, 'confirmUsdt']);
+        Route::post('/transfers/{moneyTransfer}/payout-proof', [MoneyTransferController::class, 'uploadPayoutProof']);
+        Route::patch('/transfers/{moneyTransfer}/status', [MoneyTransferController::class, 'updateStatus']);
 
         Route::get('/drivers/{driver}', [SearchController::class, 'showDriver']);
         Route::get('/vehicles/{vehicle}', [SearchController::class, 'showVehicle']);

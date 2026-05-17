@@ -1,6 +1,9 @@
 <template>
     <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-40">
-        <div class="flex-1 max-w-2xl"><GlobalSearch /></div>
+        <div class="flex-1">
+            <p class="text-xs font-black uppercase tracking-widest text-slate-400">Money Transfer Operations</p>
+            <p class="text-sm font-semibold text-slate-700">USDT receipt and payout desk</p>
+        </div>
 
         <div class="flex items-center gap-4">
             <button class="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-50"><Bell class="w-5 h-5" /></button>
@@ -12,7 +15,7 @@
                     </div>
                     <div class="hidden md:flex flex-col text-left">
                         <span class="text-sm font-semibold text-gray-700 leading-none">{{ authStore.user?.name }}</span>
-                        <span class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Dispatcher</span>
+                        <span class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Agent</span>
                     </div>
                     <ChevronDown class="w-4 h-4 text-gray-400 transition-transform" :class="{'rotate-180': isDropdownOpen}" />
                 </button>
@@ -39,7 +42,6 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useAuthStore } from "../../store/authStore";
-import GlobalSearch from "../search/GlobalSearch.vue";
 import LogoutModal from "../modals/LogoutModal.vue";
 import { Bell, LogOut, ChevronDown, User, Settings } from 'lucide-vue-next';
 
@@ -48,7 +50,7 @@ const isDropdownOpen = ref(false);
 const showLogoutModal = ref(false);
 
 const userInitials = computed(() => {
-    const name = authStore.user?.name || 'Dispatcher';
+    const name = authStore.user?.name || 'Agent';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 });
 

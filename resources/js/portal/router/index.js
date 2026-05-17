@@ -16,7 +16,9 @@ const router = createRouter({
             component: DashboardLayout,
             meta: { requiresAuth: true },
             children: [
-                { path: "dashboard", component: () => import("../pages/Dashboard.vue") },
+                { path: "", redirect: "/transfers" },
+                { path: "dashboard", name: "Dashboard", component: () => import("../pages/Dashboard.vue") },
+                { path: "transfers", name: "Transfers", component: () => import("../pages/Transfers/Index.vue") },
                 { path: "drivers", component: () => import("../pages/Drivers/Index.vue") },
                 { path: "trips", component: () => import("../pages/Trips/Index.vue") },
                 { path: "vehicles", component: () => import("../pages/Vehicles/Index.vue") },
@@ -72,8 +74,8 @@ router.beforeEach(async (to, from, next) => {
         // Redirect to login if trying to access a protected page while logged out
         next({ name: 'Login' }); // Make sure this matches your login route name
     } else if (to.name === 'Login' && authStore.user) {
-        // Redirect to dashboard if trying to access login while already logged in
-        next({ name: 'Dashboard' });
+        // Redirect to the transfer desk if trying to access login while already logged in
+        next({ name: 'Transfers' });
     } else {
         next(); // Carry on!
     }

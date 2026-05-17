@@ -1,91 +1,19 @@
 // resources/js/config/menu.js
 
 import {
-    Home,
-    Ticket,
-    BarChart3,
-    Map,
-    User,
-    Car,
-    Route,
-    FileText,
+    Send,
     Settings,
-    HelpCircle,
-    Radar,
-    Zap
 } from "lucide-vue-next";
 
 export const menu = [
     {
-        label: "Dashboard",
-        icon: Home,
-        to: "/dashboard",
-    },
-    {
-        label: "Control Tower",
-        icon: Radar,
-        to: "/control-tower",
-    },
-    {
-        label: "Dispatch",
-        icon: Zap,
-        to: "/dispatch",
-    },
-    {
-        label: "Compliance",
-        icon: Ticket,
-        children: [
-            { label: "Summary", to: "/compliance-summary" },
-            { label: "Insurances", to: "/insurances" },
-            { label: "Inspections", to: "/inspections" },
-        ],
-    },
-    {
-        label: "Fines",
-        icon: Ticket,
-        children: [
-            { label: "List Fines", to: "/fines" },
-            { label: "Analytics", to: "/fines/analytics" },
-        ],
-    },
-    {
-        label: "Trips",
-        icon: Map,
-        to: "/trips",
-    },
-    {
-        label: "Drivers",
-        icon: User,
-        to: "/drivers",
-    },
-    {
-        label: "Vehicles",
-        icon: Car,
-        to: "/vehicles",
-    },
-    {
-        label: "Routes",
-        icon: Route,
-        to: "/routes",
-    },
-    {
-        label: "Billing",
-        icon: FileText,
-        to: "/billing",
-    },
-    {
-        label: "Reports",
-        icon: BarChart3,
-        to: "/reports",
+        label: "Transfers",
+        icon: Send,
+        to: "/transfers",
     },
     {
         label: "Settings",
         icon: Settings,
         to: "/settings",
-    },
-    {
-        label: "Support",
-        icon: HelpCircle,
-        to: "/support",
     },
 ];

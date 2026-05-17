@@ -1,11 +1,8 @@
 <?php
 
 use App\Filament\Pages\TwoFactorChallenge;
-use App\Http\Controllers\ContactVerificationController;
 use App\Http\Controllers\OrderPrintController;
-use App\Http\Controllers\Portal\FineController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PortalController;
 
 Route::get('/test-2fa', function () {
     $user = auth()->user();
@@ -47,5 +44,3 @@ Route::get('/tracking', function () {
 
 //Portal
 Route::view('/portal/{any?}', 'portal')->where('any', '.*');
-
-Route::get('/portal/fines', [FineController::class, 'indexPage'])->name('portal.fines');
