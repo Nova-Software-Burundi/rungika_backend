@@ -18,6 +18,7 @@ class RolesSeeder extends Seeder
             'Admin',
             'Operator',
             'Driver',
+            'Agent',
             'Customer',
         ];
 

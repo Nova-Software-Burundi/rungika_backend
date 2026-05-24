@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\MoneyTransferController;
 use App\Http\Controllers\Api\Support\SupportCategoryController;
 use App\Http\Controllers\Api\Support\SupportTicketController;
 use App\Http\Controllers\Api\Support\SupportTicketMessageController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\ComplianceSummaryController;
@@ -148,6 +149,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/trips', [TripController::class, 'store']);
         Route::get('/trips/search-assignments', [TripController::class, 'searchAssignments']);
 
+
+        // User / Agent Management
+        Route::get('/users/stats', [UserController::class, 'kycStats']);
+        Route::get('/users', [UserController::class, 'index']);
+        Route::get('/users/{user}', [UserController::class, 'show']);
+        Route::post('/users/{user}/approve-kyc', [UserController::class, 'approveKyc']);
+        Route::post('/users/{user}/suspend', [UserController::class, 'suspend']);
+        Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole']);
 
         // Support System Nested Group
         Route::prefix('support')->group(function () {

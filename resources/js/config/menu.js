@@ -1,15 +1,19 @@
-// resources/js/config/menu.js
-
 import {
-    Send,
+    ArrowLeftRight,
     Settings,
+    ShieldCheck,
 } from "lucide-vue-next";
 
 export const menu = [
     {
         label: "Transfers",
-        icon: Send,
+        icon: ArrowLeftRight,
         to: "/transfers",
+    },
+    {
+        label: "Users",
+        icon: ShieldCheck,
+        to: "/users",
     },
     {
         label: "Settings",
