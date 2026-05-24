@@ -12,6 +12,7 @@ class MoneyTransfer extends Model
     protected $fillable = [
         'reference',
         'initiated_by',
+        'sender_user_id',
         'assigned_agent_id',
         'sender_name',
         'sender_phone',
@@ -58,6 +59,11 @@ class MoneyTransfer extends Model
     public function initiator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'initiated_by');
+    }
+
+    public function senderUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_user_id');
     }
 
     public function agent(): BelongsTo

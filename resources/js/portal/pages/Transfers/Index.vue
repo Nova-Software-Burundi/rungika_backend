@@ -34,9 +34,31 @@
 
                 <form class="space-y-4" @submit.prevent="createTransfer">
                     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
-                        <label class="block">
+                        <label class="block relative">
                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sender</span>
-                            <input v-model="form.sender_name" required class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold focus:border-emerald-500 focus:ring-emerald-500" />
+                            <input
+                                v-model="form.sender_name"
+                                @input="searchSenders"
+                                @focus="searchSenders"
+                                @blur="hideSenderResults"
+                                required
+                                placeholder="Type to search existing senders..."
+                                class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold focus:border-emerald-500 focus:ring-emerald-500"
+                            />
+                            <ul
+                                v-if="senderResults.length && showSenderResults"
+                                class="absolute z-50 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-xl max-h-48 overflow-y-auto"
+                            >
+                                <li
+                                    v-for="s in senderResults"
+                                    :key="s.id"
+                                    @mousedown.prevent="selectSender(s)"
+                                    class="cursor-pointer px-4 py-3 text-sm font-bold hover:bg-emerald-50 border-b border-slate-100 last:border-0"
+                                >
+                                    <span class="text-slate-800">{{ s.name }}</span>
+                                    <span class="ml-2 text-[10px] font-semibold text-slate-400">{{ s.phone || s.email }}</span>
+                                </li>
+                            </ul>
                         </label>
                         <label class="block">
                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sender Phone</span>
@@ -253,6 +275,9 @@ const payoutProofFile = ref(null);
 const proofNotes = ref('');
 const agentNotes = ref('');
 const debounceTimer = ref(null);
+const senderResults = ref([]);
+const showSenderResults = ref(false);
+const senderSearchTimer = ref(null);
 
 const filters = ref({
     q: '',
@@ -262,6 +287,7 @@ const filters = ref({
 const form = ref({
     sender_name: '',
     sender_phone: '',
+    sender_user_id: '',
     recipient_name: '',
     recipient_phone: '',
     recipient_location: 'Lusaka',
@@ -343,15 +369,55 @@ const selectTransfer = async (transfer) => {
     proofNotes.value = '';
 };
 
+const searchSenders = () => {
+    clearTimeout(senderSearchTimer.value);
+    const q = form.value.sender_name.trim();
+    if (!q) {
+        senderResults.value = [];
+        showSenderResults.value = false;
+        return;
+    }
+    senderSearchTimer.value = setTimeout(async () => {
+        const { data } = await api.get('/portal/users', { params: { q, per_page: 8 } });
+        senderResults.value = (data.data || []).filter(u => u.id !== form.value.sender_user_id);
+        showSenderResults.value = true;
+    }, 250);
+};
+
+const hideSenderResults = () => {
+    setTimeout(() => { showSenderResults.value = false; }, 200);
+};
+
+const selectSender = (user) => {
+    form.value.sender_user_id = user.id;
+    form.value.sender_name = user.name;
+    form.value.sender_phone = user.phone || '';
+    showSenderResults.value = false;
+};
+
 const createTransfer = async () => {
     saving.value = true;
     errorMessage.value = '';
     successMessage.value = '';
 
     try {
-        const payload = Object.fromEntries(
-            Object.entries(form.value).filter(([, value]) => value !== '')
-        );
+        const payload = {
+            sender_name: form.value.sender_name,
+            sender_phone: form.value.sender_phone,
+            recipient_name: form.value.recipient_name,
+            recipient_phone: form.value.recipient_phone,
+            recipient_location: form.value.recipient_location,
+            send_amount: form.value.send_amount,
+            send_currency: form.value.send_currency,
+            usdt_amount: form.value.usdt_amount,
+            payout_currency: form.value.payout_currency,
+            payout_amount: form.value.payout_amount,
+            notes: form.value.notes,
+        };
+        if (form.value.sender_user_id) {
+            payload.sender_user_id = form.value.sender_user_id;
+        }
+        Object.keys(payload).forEach(k => { if (payload[k] === '' || payload[k] === null || payload[k] === undefined) delete payload[k]; });
         const { data } = await api.post('/portal/transfers', payload);
         successMessage.value = `Created ${data.reference}`;
         resetForm();
@@ -410,6 +476,7 @@ const resetForm = () => {
     form.value = {
         sender_name: '',
         sender_phone: '',
+        sender_user_id: '',
         recipient_name: '',
         recipient_phone: '',
         recipient_location: 'Lusaka',
@@ -420,6 +487,7 @@ const resetForm = () => {
         payout_amount: '',
         notes: '',
     };
+    senderResults.value = [];
 };
 
 const statusMeta = (status) => {

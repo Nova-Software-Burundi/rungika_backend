@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contact;
 use App\Models\MoneyTransfer;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -16,6 +19,7 @@ class MoneyTransferController extends Controller
     {
         $query = MoneyTransfer::with([
             'initiator:id,name,email',
+            'senderUser:id,name,email,phone',
             'agent:id,name,email',
             'usdtConfirmer:id,name,email',
             'payoutConfirmer:id,name,email',
@@ -64,6 +68,7 @@ class MoneyTransferController extends Controller
         $data = $request->validate([
             'sender_name' => ['required', 'string', 'max:255'],
             'sender_phone' => ['nullable', 'string', 'max:50'],
+            'sender_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'recipient_name' => ['required', 'string', 'max:255'],
             'recipient_phone' => ['nullable', 'string', 'max:50'],
             'recipient_location' => ['nullable', 'string', 'max:255'],
@@ -77,8 +82,39 @@ class MoneyTransferController extends Controller
         ]);
 
         $transfer = DB::transaction(function () use ($data, $request) {
+            $senderUserId = $data['sender_user_id'] ?? null;
+
+            if (!$senderUserId && $data['sender_phone'] ?? null) {
+                $existing = User::where('phone', $data['sender_phone'])->first();
+                if ($existing) {
+                    $senderUserId = $existing->id;
+                }
+            }
+
+            if (!$senderUserId && ($data['sender_phone'] ?? null)) {
+                $user = User::create([
+                    'name' => $data['sender_name'],
+                    'phone' => $data['sender_phone'],
+                    'email' => 'sender-' . now()->format('YmdHis') . '-' . mt_rand(1000, 9999) . '@rungika.app',
+                    'password' => Hash::make(str()->random(32)),
+                    'kyc_status' => 'pending',
+                ]);
+
+                $user->assignRole('Customer');
+
+                Contact::create([
+                    'user_id' => $user->id,
+                    'type' => 'phone',
+                    'value' => $data['sender_phone'],
+                    'is_primary' => true,
+                ]);
+
+                $senderUserId = $user->id;
+            }
+
             $transfer = MoneyTransfer::create([
                 ...$data,
+                'sender_user_id' => $senderUserId,
                 'initiated_by' => $request->user()->id,
                 'send_currency' => $data['send_currency'] ?? 'USD',
                 'payout_currency' => $data['payout_currency'] ?? 'ZMW',
@@ -95,13 +131,14 @@ class MoneyTransferController extends Controller
             return $transfer;
         });
 
-        return response()->json($transfer->load(['initiator:id,name,email', 'events.user:id,name,email']), 201);
+        return response()->json($transfer->load(['initiator:id,name,email', 'senderUser:id,name,email,phone', 'events.user:id,name,email']), 201);
     }
 
     public function show(MoneyTransfer $moneyTransfer): JsonResponse
     {
         return response()->json($moneyTransfer->load([
             'initiator:id,name,email',
+            'senderUser:id,name,email,phone',
             'agent:id,name,email',
             'usdtConfirmer:id,name,email',
             'payoutConfirmer:id,name,email',
