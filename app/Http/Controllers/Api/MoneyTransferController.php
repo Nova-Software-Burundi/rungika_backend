@@ -20,6 +20,7 @@ class MoneyTransferController extends Controller
         $query = MoneyTransfer::with([
             'initiator:id,name,email',
             'senderUser:id,name,email,phone',
+            'recipientUser:id,name,email,phone',
             'agent:id,name,email',
             'usdtConfirmer:id,name,email',
             'payoutConfirmer:id,name,email',
@@ -71,6 +72,7 @@ class MoneyTransferController extends Controller
             'sender_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'recipient_name' => ['required', 'string', 'max:255'],
             'recipient_phone' => ['nullable', 'string', 'max:50'],
+            'recipient_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'recipient_location' => ['nullable', 'string', 'max:255'],
             'send_amount' => ['required', 'numeric', 'min:0.01'],
             'send_currency' => ['nullable', 'string', 'max:10'],
@@ -120,9 +122,48 @@ class MoneyTransferController extends Controller
                 ]);
             }
 
+            $recipientUserId = $data['recipient_user_id'] ?? null;
+
+            if (!$recipientUserId && ($data['recipient_phone'] ?? null)) {
+                $existing = User::where('phone', $data['recipient_phone'])->first();
+                if ($existing) {
+                    $recipientUserId = $existing->id;
+                }
+            }
+
+            if (!$recipientUserId && ($data['recipient_phone'] ?? null)) {
+                $user = User::create([
+                    'name' => $data['recipient_name'],
+                    'phone' => $data['recipient_phone'],
+                    'email' => 'recipient-' . now()->format('YmdHis') . '-' . mt_rand(1000, 9999) . '@rungika.app',
+                    'password' => Hash::make(str()->random(32)),
+                    'kyc_status' => 'pending',
+                ]);
+
+                $user->assignRole('Customer');
+
+                Contact::create([
+                    'user_id' => $user->id,
+                    'type' => 'phone',
+                    'value' => $data['recipient_phone'],
+                    'is_primary' => true,
+                ]);
+
+                $recipientUserId = $user->id;
+            }
+
+            if ($recipientUserId && ($data['recipient_phone'] ?? null)) {
+                Contact::firstOrCreate([
+                    'user_id' => $recipientUserId,
+                    'type' => 'phone',
+                    'value' => $data['recipient_phone'],
+                ]);
+            }
+
             $transfer = MoneyTransfer::create([
                 ...$data,
                 'sender_user_id' => $senderUserId,
+                'recipient_user_id' => $recipientUserId,
                 'initiated_by' => $request->user()->id,
                 'send_currency' => $data['send_currency'] ?? 'USD',
                 'payout_currency' => $data['payout_currency'] ?? 'ZMW',
@@ -139,7 +180,7 @@ class MoneyTransferController extends Controller
             return $transfer;
         });
 
-        return response()->json($transfer->load(['initiator:id,name,email', 'senderUser:id,name,email,phone', 'events.user:id,name,email']), 201);
+        return response()->json($transfer->load(['initiator:id,name,email', 'senderUser:id,name,email,phone', 'recipientUser:id,name,email,phone', 'events.user:id,name,email']), 201);
     }
 
     public function show(MoneyTransfer $moneyTransfer): JsonResponse
@@ -147,6 +188,7 @@ class MoneyTransferController extends Controller
         return response()->json($moneyTransfer->load([
             'initiator:id,name,email',
             'senderUser:id,name,email,phone',
+            'recipientUser:id,name,email,phone',
             'agent:id,name,email',
             'usdtConfirmer:id,name,email',
             'payoutConfirmer:id,name,email',

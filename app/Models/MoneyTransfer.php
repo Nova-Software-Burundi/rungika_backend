@@ -13,6 +13,7 @@ class MoneyTransfer extends Model
         'reference',
         'initiated_by',
         'sender_user_id',
+        'recipient_user_id',
         'assigned_agent_id',
         'sender_name',
         'sender_phone',
@@ -64,6 +65,11 @@ class MoneyTransfer extends Model
     public function senderUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sender_user_id');
+    }
+
+    public function recipientUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recipient_user_id');
     }
 
     public function agent(): BelongsTo

@@ -64,9 +64,31 @@
                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sender Phone</span>
                             <input v-model="form.sender_phone" class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold focus:border-emerald-500 focus:ring-emerald-500" />
                         </label>
-                        <label class="block">
+                        <label class="block relative">
                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Recipient</span>
-                            <input v-model="form.recipient_name" required class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold focus:border-emerald-500 focus:ring-emerald-500" />
+                            <input
+                                v-model="form.recipient_name"
+                                @input="onRecipientNameInput"
+                                @focus="searchRecipients"
+                                @blur="hideRecipientResults"
+                                required
+                                placeholder="Type to search existing recipients..."
+                                class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold focus:border-emerald-500 focus:ring-emerald-500"
+                            />
+                            <ul
+                                v-if="recipientResults.length && showRecipientResults"
+                                class="absolute z-50 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-xl max-h-48 overflow-y-auto"
+                            >
+                                <li
+                                    v-for="r in recipientResults"
+                                    :key="r.id"
+                                    @mousedown.prevent="selectRecipient(r)"
+                                    class="cursor-pointer px-4 py-3 text-sm font-bold hover:bg-emerald-50 border-b border-slate-100 last:border-0"
+                                >
+                                    <span class="text-slate-800">{{ r.name }}</span>
+                                    <span class="ml-2 text-[10px] font-semibold text-slate-400">{{ r.phone || r.email }}</span>
+                                </li>
+                            </ul>
                         </label>
                         <label class="block">
                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Recipient Phone</span>
@@ -278,6 +300,9 @@ const debounceTimer = ref(null);
 const senderResults = ref([]);
 const showSenderResults = ref(false);
 const senderSearchTimer = ref(null);
+const recipientResults = ref([]);
+const showRecipientResults = ref(false);
+const recipientSearchTimer = ref(null);
 
 const filters = ref({
     q: '',
@@ -290,6 +315,7 @@ const form = ref({
     sender_user_id: '',
     recipient_name: '',
     recipient_phone: '',
+    recipient_user_id: '',
     recipient_location: 'Lusaka',
     send_amount: '',
     send_currency: '',
@@ -378,7 +404,8 @@ const searchSenders = () => {
     clearTimeout(senderSearchTimer.value);
     const q = form.value.sender_name.trim();
     if (!q) {
-        senderResults.value = [];
+    senderResults.value = [];
+    recipientResults.value = [];
         showSenderResults.value = false;
         return;
     }
@@ -398,6 +425,37 @@ const selectSender = (user) => {
     form.value.sender_name = user.name;
     form.value.sender_phone = user.phone || '';
     showSenderResults.value = false;
+};
+
+const onRecipientNameInput = () => {
+    form.value.recipient_user_id = '';
+    searchRecipients();
+};
+
+const searchRecipients = () => {
+    clearTimeout(recipientSearchTimer.value);
+    const q = form.value.recipient_name.trim();
+    if (!q) {
+        recipientResults.value = [];
+        showRecipientResults.value = false;
+        return;
+    }
+    recipientSearchTimer.value = setTimeout(async () => {
+        const { data } = await api.get('/portal/users', { params: { q, per_page: 8 } });
+        recipientResults.value = (data.data || []).filter(u => u.id !== form.value.recipient_user_id);
+        showRecipientResults.value = true;
+    }, 250);
+};
+
+const hideRecipientResults = () => {
+    setTimeout(() => { showRecipientResults.value = false; }, 200);
+};
+
+const selectRecipient = (user) => {
+    form.value.recipient_user_id = user.id;
+    form.value.recipient_name = user.name;
+    form.value.recipient_phone = user.phone || '';
+    showRecipientResults.value = false;
 };
 
 const createTransfer = async () => {
@@ -421,6 +479,9 @@ const createTransfer = async () => {
         };
         if (form.value.sender_user_id) {
             payload.sender_user_id = form.value.sender_user_id;
+        }
+        if (form.value.recipient_user_id) {
+            payload.recipient_user_id = form.value.recipient_user_id;
         }
         Object.keys(payload).forEach(k => { if (k !== 'sender_phone' && (payload[k] === '' || payload[k] === null || payload[k] === undefined)) delete payload[k]; });
         const { data } = await api.post('/portal/transfers', payload);
@@ -484,6 +545,7 @@ const resetForm = () => {
         sender_user_id: '',
         recipient_name: '',
         recipient_phone: '',
+        recipient_user_id: '',
         recipient_location: 'Lusaka',
         send_amount: '',
         send_currency: defaultCurr,
