@@ -66,7 +66,7 @@ class CurrencyController extends Controller
     {
         $rates = ExchangeRate::where('base_currency_id', $currency->id)
             ->orWhere('target_currency_id', $currency->id)
-            ->with(['baseCurrency', 'targetCurrency', 'creator:id,name'])
+            ->with('creator:id,name')
             ->orderByDesc('valid_from')
             ->get();
 
@@ -97,7 +97,7 @@ class CurrencyController extends Controller
             ]);
         });
 
-        return response()->json($rate->load(['baseCurrency', 'targetCurrency', 'creator:id,name']), 201);
+        return response()->json($rate->load('creator:id,name'), 201);
     }
 
     public function destroyExchangeRate(ExchangeRate $exchangeRate): JsonResponse
