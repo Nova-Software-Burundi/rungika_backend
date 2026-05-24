@@ -64,7 +64,9 @@
                         </label>
                         <label class="block">
                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Currency</span>
-                            <input v-model="form.send_currency" maxlength="10" class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black uppercase focus:border-emerald-500 focus:ring-emerald-500" />
+                            <select v-model="form.send_currency" class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black uppercase focus:border-emerald-500 focus:ring-emerald-500">
+                                <option v-for="c in currencies" :key="c.code" :value="c.code">{{ c.code }}</option>
+                            </select>
                         </label>
                     </div>
 
@@ -75,7 +77,9 @@
                         </label>
                         <label class="block">
                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Payout Currency</span>
-                            <input v-model="form.payout_currency" maxlength="10" class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black uppercase focus:border-emerald-500 focus:ring-emerald-500" />
+                            <select v-model="form.payout_currency" class="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black uppercase focus:border-emerald-500 focus:ring-emerald-500">
+                                <option v-for="c in currencies" :key="c.code" :value="c.code">{{ c.code }}</option>
+                            </select>
                         </label>
                     </div>
 
@@ -241,6 +245,7 @@ const saving = ref(false);
 const transfers = ref([]);
 const selected = ref(null);
 const stats = ref({});
+const currencies = ref([]);
 const errorMessage = ref('');
 const successMessage = ref('');
 const usdtProofFile = ref(null);
@@ -261,9 +266,9 @@ const form = ref({
     recipient_phone: '',
     recipient_location: 'Lusaka',
     send_amount: '',
-    send_currency: 'USD',
+    send_currency: '',
     usdt_amount: '',
-    payout_currency: 'ZMW',
+    payout_currency: '',
     payout_amount: '',
     notes: '',
 });
@@ -306,6 +311,16 @@ const fetchTransfers = async () => {
 const fetchStats = async () => {
     const { data } = await api.get('/portal/transfers/stats');
     stats.value = data;
+};
+
+const fetchCurrencies = async () => {
+    const { data } = await api.get('/portal/currencies');
+    currencies.value = data;
+    if (data.length) {
+        form.value.send_currency = data.find(c => c.is_default)?.code || data[0].code;
+        const payCurrencies = data.filter(c => c.code !== 'USD');
+        form.value.payout_currency = payCurrencies.length ? payCurrencies[0].code : data[0].code;
+    }
 };
 
 const refresh = async () => {
@@ -389,6 +404,9 @@ const uploadPayoutProof = async () => {
 };
 
 const resetForm = () => {
+    const defaultCurr = currencies.value.find(c => c.is_default)?.code || currencies.value[0]?.code || 'USD';
+    const payCurr = currencies.value.filter(c => c.code !== 'USD');
+    const defaultPay = payCurr.length ? payCurr[0].code : defaultCurr;
     form.value = {
         sender_name: '',
         sender_phone: '',
@@ -396,9 +414,9 @@ const resetForm = () => {
         recipient_phone: '',
         recipient_location: 'Lusaka',
         send_amount: '',
-        send_currency: 'USD',
+        send_currency: defaultCurr,
         usdt_amount: '',
-        payout_currency: 'ZMW',
+        payout_currency: defaultPay,
         payout_amount: '',
         notes: '',
     };
@@ -435,5 +453,8 @@ const formatDate = (date) => {
 
 const proofUrl = (path) => `/storage/${path}`;
 
-onMounted(refresh);
+onMounted(async () => {
+    await fetchCurrencies();
+    await refresh();
+});
 </script>
