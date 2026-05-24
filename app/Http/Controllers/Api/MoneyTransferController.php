@@ -84,7 +84,7 @@ class MoneyTransferController extends Controller
         $transfer = DB::transaction(function () use ($data, $request) {
             $senderUserId = $data['sender_user_id'] ?? null;
 
-            if (!$senderUserId && $data['sender_phone'] ?? null) {
+            if (!$senderUserId && ($data['sender_phone'] ?? null)) {
                 $existing = User::where('phone', $data['sender_phone'])->first();
                 if ($existing) {
                     $senderUserId = $existing->id;
@@ -110,6 +110,14 @@ class MoneyTransferController extends Controller
                 ]);
 
                 $senderUserId = $user->id;
+            }
+
+            if ($senderUserId && ($data['sender_phone'] ?? null)) {
+                Contact::firstOrCreate([
+                    'user_id' => $senderUserId,
+                    'type' => 'phone',
+                    'value' => $data['sender_phone'],
+                ]);
             }
 
             $transfer = MoneyTransfer::create([

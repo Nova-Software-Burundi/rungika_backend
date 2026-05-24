@@ -38,7 +38,7 @@
                             <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sender</span>
                             <input
                                 v-model="form.sender_name"
-                                @input="searchSenders"
+                                @input="onSenderNameInput"
                                 @focus="searchSenders"
                                 @blur="hideSenderResults"
                                 required
@@ -369,6 +369,11 @@ const selectTransfer = async (transfer) => {
     proofNotes.value = '';
 };
 
+const onSenderNameInput = () => {
+    form.value.sender_user_id = '';
+    searchSenders();
+};
+
 const searchSenders = () => {
     clearTimeout(senderSearchTimer.value);
     const q = form.value.sender_name.trim();
@@ -417,7 +422,7 @@ const createTransfer = async () => {
         if (form.value.sender_user_id) {
             payload.sender_user_id = form.value.sender_user_id;
         }
-        Object.keys(payload).forEach(k => { if (payload[k] === '' || payload[k] === null || payload[k] === undefined) delete payload[k]; });
+        Object.keys(payload).forEach(k => { if (k !== 'sender_phone' && (payload[k] === '' || payload[k] === null || payload[k] === undefined)) delete payload[k]; });
         const { data } = await api.post('/portal/transfers', payload);
         successMessage.value = `Created ${data.reference}`;
         resetForm();
