@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Contact;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -177,6 +179,53 @@ class MobileAuthController extends Controller
             Log::warning('Firebase verify failed: '.$e->getMessage());
             return response()->json(['message' => 'Invalid or expired Firebase token.'], 422);
         }
+    }
+
+    /**
+     * Register a new mobile user.
+     */
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:50', 'unique:users,phone'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+        ]);
+
+        $user = DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name' => $data['name'],
+                'phone' => $data['phone'],
+                'email' => $data['email'] ?? $data['phone'] . '@mobile.user',
+                'password' => Hash::make(str()->random(32)),
+                'kyc_status' => 'pending',
+            ]);
+
+            $user->assignRole('Customer');
+
+            Contact::create([
+                'user_id' => $user->id,
+                'type' => 'whatsapp',
+                'value' => $data['phone'],
+                'is_primary' => true,
+            ]);
+
+            if ($data['email'] ?? null) {
+                Contact::create([
+                    'user_id' => $user->id,
+                    'type' => 'email',
+                    'value' => $data['email'],
+                    'is_primary' => false,
+                ]);
+            }
+
+            return $user;
+        });
+
+        return response()->json([
+            'message' => 'Registration successful. Please verify your phone via OTP to login.',
+            'user' => $user->load('roles'),
+        ], 201);
     }
 
     /**

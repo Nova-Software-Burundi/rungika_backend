@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\Support\SupportCategoryController;
 use App\Http\Controllers\Api\Support\SupportTicketController;
 use App\Http\Controllers\Api\Support\SupportTicketMessageController;
 use App\Http\Controllers\Api\CurrencyController;
+use App\Http\Controllers\Api\Mobile\ProfileController as MobileProfileController;
+use App\Http\Controllers\Api\Mobile\TransferController as MobileTransferController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -43,6 +45,7 @@ Route::get('/search/global', [SearchController::class, 'search']);
 
 // Mobile Auth Routes
 Route::prefix('mobile/auth')->group(function () {
+    Route::post('/register', [MobileAuthController::class, 'register']);
     Route::post('/request-whatsapp-otp', [MobileAuthController::class, 'requestWhatsAppOtp']);
     Route::post('/verify-whatsapp-otp', [MobileAuthController::class, 'verifyWhatsAppOtp']);
     Route::post('/verify-firebase-phone', [MobileAuthController::class, 'verifyFirebasePhone']);
@@ -51,10 +54,23 @@ Route::prefix('mobile/auth')->group(function () {
 
 // Mobile App Routes (Protected)
 Route::prefix('mobile')->middleware('auth:sanctum')->group(function () {
+    // Profile
+    Route::get('/profile', [MobileProfileController::class, 'show']);
+    Route::put('/profile', [MobileProfileController::class, 'update']);
+
+    // Trips (legacy)
     Route::prefix('trips')->group(function () {
         Route::get('/current', [MobileTripController::class, 'current']);
         Route::post('/{trip}/status', [MobileTripController::class, 'updateStatus']);
     });
+
+    // Money Transfers
+    Route::get('/transfers', [MobileTransferController::class, 'index']);
+    Route::post('/transfers', [MobileTransferController::class, 'store']);
+    Route::get('/transfers/{moneyTransfer}', [MobileTransferController::class, 'show']);
+    Route::post('/transfers/{moneyTransfer}/usdt-proof', [MobileTransferController::class, 'uploadUsdtProof']);
+    Route::post('/transfers/{moneyTransfer}/confirm-usdt', [MobileTransferController::class, 'confirmUsdt']);
+    Route::post('/transfers/{moneyTransfer}/payout-proof', [MobileTransferController::class, 'uploadPayoutProof']);
 });
 
 // Protected Routes
