@@ -20,6 +20,7 @@ const router = createRouter({
                 { path: "dashboard", name: "Dashboard", component: () => import("../pages/Dashboard.vue") },
                 { path: "transfers", name: "Transfers", component: () => import("../pages/Transfers/Index.vue") },
                 { path: "users", name: "Users", component: () => import("../pages/Users/Index.vue") },
+                { path: "currencies", name: "Currencies", component: () => import("../pages/Currencies/Index.vue") },
                 { path: "drivers", component: () => import("../pages/Drivers/Index.vue") },
                 { path: "trips", component: () => import("../pages/Trips/Index.vue") },
                 { path: "vehicles", component: () => import("../pages/Vehicles/Index.vue") },

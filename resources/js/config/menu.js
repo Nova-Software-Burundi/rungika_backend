@@ -1,5 +1,6 @@
 import {
     ArrowLeftRight,
+    CircleDollarSign,
     Settings,
     ShieldCheck,
 } from "lucide-vue-next";
@@ -14,6 +15,11 @@ export const menu = [
         label: "Users",
         icon: ShieldCheck,
         to: "/users",
+    },
+    {
+        label: "Currencies",
+        icon: CircleDollarSign,
+        to: "/currencies",
     },
     {
         label: "Settings",

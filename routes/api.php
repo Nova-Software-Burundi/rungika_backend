@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\MoneyTransferController;
 use App\Http\Controllers\Api\Support\SupportCategoryController;
 use App\Http\Controllers\Api\Support\SupportTicketController;
 use App\Http\Controllers\Api\Support\SupportTicketMessageController;
+use App\Http\Controllers\Api\CurrencyController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -149,6 +150,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/trips', [TripController::class, 'store']);
         Route::get('/trips/search-assignments', [TripController::class, 'searchAssignments']);
 
+
+        // Currencies
+        Route::get('/currencies', [CurrencyController::class, 'index']);
+        Route::post('/currencies', [CurrencyController::class, 'store']);
+        Route::get('/currencies/{currency}', [CurrencyController::class, 'show']);
+        Route::put('/currencies/{currency}', [CurrencyController::class, 'update']);
+        Route::delete('/currencies/{currency}', [CurrencyController::class, 'destroy']);
+        Route::get('/currencies/{currency}/exchange-rates', [CurrencyController::class, 'exchangeRates']);
+        Route::post('/exchange-rates', [CurrencyController::class, 'storeExchangeRate']);
+        Route::delete('/exchange-rates/{exchangeRate}', [CurrencyController::class, 'destroyExchangeRate']);
 
         // User / Agent Management
         Route::get('/users/stats', [UserController::class, 'kycStats']);

@@ -12,6 +12,8 @@ class ExchangeRate extends Model
     protected $fillable = [
         'base_currency',
         'target_currency',
+        'base_currency_id',
+        'target_currency_id',
         'rate',
         'valid_from',
         'valid_to',
@@ -64,5 +66,10 @@ class ExchangeRate extends Model
     public function targetCurrency()
     {
         return $this->belongsTo(Currency::class, 'target_currency_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
