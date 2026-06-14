@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 
 class TradeService
 {
+    public function __construct(protected FeeService $feeService) {}
     const STATUSES = [
         'pending', 'awaiting_payment', 'payment_sent',
         'released', 'completed', 'cancelled', 'disputed', 'resolved',
@@ -50,6 +51,10 @@ class TradeService
 
             $reference = 'P2P-' . strtoupper(Str::random(8));
 
+            $fees = $this->feeService->calculateForTrade(
+                $ad->asset_id, $ad->fiat_currency_id, $fiatAmount
+            );
+
             $trade = Trade::create([
                 'reference'          => $reference,
                 'ad_id'              => $ad->id,
@@ -63,8 +68,8 @@ class TradeService
                 'price'              => $price,
                 'payment_method_id'  => $data['payment_method_id'],
                 'payment_details'    => $data['payment_details'] ?? null,
-                'fee_buyer'          => 0,
-                'fee_seller'         => 0,
+                'fee_buyer'          => $fees['buyer'],
+                'fee_seller'         => $fees['seller'],
             ]);
 
             $this->logEvent($trade, 'system', null, 'pending', 'Trade created');

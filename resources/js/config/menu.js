@@ -7,6 +7,8 @@ import {
     Coins,
     CreditCard,
     Megaphone,
+    BarChart3,
+    TrendingUp,
 } from "lucide-vue-next";
 
 export const menu = [
@@ -17,6 +19,9 @@ export const menu = [
     { label: "Payment Methods", icon: CreditCard, to: "/payment-methods" },
     { label: "Trades", icon: ArrowLeftRight, to: "/trades" },
     { label: "Ads", icon: Megaphone, to: "/ads" },
+    { label: "Fees", icon: Coins, to: "/platform-fees" },
+    { label: "Prices", icon: TrendingUp, to: "/reference-prices" },
+    { label: "Revenue", icon: BarChart3, to: "/revenue" },
     { label: "Support", icon: LifeBuoy, to: "/support" },
     { label: "Settings", icon: Settings, to: "/settings" },
 ];

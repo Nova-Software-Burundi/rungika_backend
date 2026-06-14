@@ -17,6 +17,9 @@ use App\Http\Controllers\Api\Admin\PaymentMethodController as AdminPaymentMethod
 use App\Http\Controllers\Api\Admin\AdvertisementController as AdminAdvertisementController;
 use App\Http\Controllers\Api\Admin\TradeController as AdminTradeController;
 use App\Http\Controllers\Api\Admin\DisputeMessageController as AdminDisputeMessageController;
+use App\Http\Controllers\Api\Admin\PlatformFeeController as AdminPlatformFeeController;
+use App\Http\Controllers\Api\Admin\ReferencePriceController as AdminReferencePriceController;
+use App\Http\Controllers\Api\Admin\RevenueController as AdminRevenueController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -51,6 +54,7 @@ Route::prefix('mobile')->middleware('auth:sanctum')->group(function () {
     Route::get('/assets', [MobileReferenceController::class, 'assets']);
     Route::get('/fiat-currencies', [MobileReferenceController::class, 'fiatCurrencies']);
     Route::get('/payment-methods', [MobileReferenceController::class, 'paymentMethods']);
+    Route::get('/reference-prices', [MobileReferenceController::class, 'referencePrices']);
 
     // P2P Advertisements
     Route::get('/ads', [MobileAdController::class, 'index']);
@@ -138,6 +142,26 @@ Route::middleware('auth')->group(function () {
         Route::post('/trades/{trade}/resolve-dispute', [AdminTradeController::class, 'resolveDispute']);
         Route::get('/trades/{trade}/dispute-messages', [AdminDisputeMessageController::class, 'index']);
         Route::post('/trades/{trade}/dispute-messages', [AdminDisputeMessageController::class, 'store']);
+
+        // P2P Admin — Platform Fees
+        Route::get('/platform-fees', [AdminPlatformFeeController::class, 'index']);
+        Route::post('/platform-fees', [AdminPlatformFeeController::class, 'store']);
+        Route::get('/platform-fees/{platformFee}', [AdminPlatformFeeController::class, 'show']);
+        Route::put('/platform-fees/{platformFee}', [AdminPlatformFeeController::class, 'update']);
+        Route::delete('/platform-fees/{platformFee}', [AdminPlatformFeeController::class, 'destroy']);
+
+        // P2P Admin — Reference Prices
+        Route::get('/reference-prices', [AdminReferencePriceController::class, 'index']);
+        Route::post('/reference-prices', [AdminReferencePriceController::class, 'store']);
+        Route::get('/reference-prices/{referencePrice}', [AdminReferencePriceController::class, 'show']);
+        Route::put('/reference-prices/{referencePrice}', [AdminReferencePriceController::class, 'update']);
+        Route::delete('/reference-prices/{referencePrice}', [AdminReferencePriceController::class, 'destroy']);
+        Route::get('/reference-prices/latest', [AdminReferencePriceController::class, 'latest']);
+
+        // P2P Admin — Revenue Dashboard
+        Route::get('/revenue/summary', [AdminRevenueController::class, 'summary']);
+        Route::get('/revenue/by-pair', [AdminRevenueController::class, 'byPair']);
+        Route::get('/revenue/totals', [AdminRevenueController::class, 'totals']);
 
         // Support System
         Route::prefix('support')->group(function () {
