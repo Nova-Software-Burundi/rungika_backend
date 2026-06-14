@@ -9,7 +9,15 @@ class Currency extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'name', 'symbol', 'is_default'];
+    protected $fillable = ['code', 'name', 'symbol', 'is_default', 'enabled'];
+
+    protected function casts(): array
+    {
+        return [
+            'is_default' => 'boolean',
+            'enabled' => 'boolean',
+        ];
+    }
 
     public function exchangeRatesAsBase()
     {
