@@ -2,7 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\DispatcherDashboard;
 use App\Http\Middleware\EnsureUserHasFilamentRole;
 use App\Http\Middleware\LogRedirects;
 use App\Http\Middleware\TwoFactorMiddleware;
@@ -33,14 +32,9 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Teal,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
-            ->pages([
-                DispatcherDashboard::class,
-            ])
+            ->pages([])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-
-            ])
+            ->widgets([])
             ->plugin(FilamentShieldPlugin::make())
             ->middleware([
                 LogRedirects::class,
