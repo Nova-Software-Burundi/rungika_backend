@@ -3,7 +3,7 @@
 @section('content')
     <section class="text-center mb-16">
         <h1 class="text-3xl font-extrabold text-[#222222] mb-4">Contact Us</h1>
-        <p class="text-lg text-gray-600">We’re here to answer your questions and provide logistics support.</p>
+        <p class="text-lg text-gray-600">We are here to answer your questions and help with your transfers.</p>
     </section>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -40,7 +40,7 @@
             </div>
             <div class="p-6 border rounded-lg shadow">
                 <h3 class="text-xl font-bold mb-2">Contact Information</h3>
-                <p>Email: <a href="mailto:info@martinlogistics.com" class="text-[#dc3534]">info@martinlogistics.com</a></p>
+                <p>Email: <a href="mailto:info@rungika.com" class="text-[#dc3534]">info@rungika.com</a></p>
                 <p>Phone: +250 79 123 456</p>
             </div>
         </div>

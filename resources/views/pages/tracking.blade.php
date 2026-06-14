@@ -2,9 +2,9 @@
 
 @section('content')
     <section class="text-center mb-16">
-        <h1 class="text-3xl font-extrabold text-[#222222] mb-4">Track Your Shipment</h1>
+        <h1 class="text-3xl font-extrabold text-[#222222] mb-4">Track Your Transfer</h1>
         <p class="text-lg text-gray-600">
-            Enter your tracking number to view the latest shipment details and delivery status.
+            Enter your transfer reference number to view the latest status and activity.
         </p>
     </section>
 
@@ -14,7 +14,7 @@
             <input
                 type="text"
                 name="tracking_number"
-                placeholder="Enter Tracking Number"
+                placeholder="Enter Reference Number"
                 class="flex-1 p-3 border rounded-lg focus:ring-[#dc3534] focus:border-[#dc3534]"
                 required
             >
@@ -32,35 +32,36 @@
         <div class="mt-16 max-w-2xl mx-auto">
             <div class="p-6 border rounded-lg shadow bg-white">
                 <h2 class="text-2xl font-bold text-[#222222] mb-4">
-                    Tracking Results for <span class="text-[#dc3534]">{{ request('tracking_number') }}</span>
+                    Transfer Results for <span class="text-[#dc3534]">{{ request('tracking_number') }}</span>
                 </h2>
 
-                {{-- Shipment Overview --}}
+                {{-- Transfer Overview --}}
                 <div class="mb-6">
-                    <p><span class="font-bold">Status:</span> <span class="text-green-600">In Transit</span></p>
-                    <p><span class="font-bold">Origin:</span> Dar es Salaam, TZ</p>
-                    <p><span class="font-bold">Destination:</span> Kigali, RW</p>
-                    <p><span class="font-bold">Estimated Delivery:</span> Oct 10, 2025</p>
+                    <p><span class="font-bold">Status:</span> <span class="text-green-600">In Progress</span></p>
+                    <p><span class="font-bold">Amount:</span> 500 ZMW</p>
+                    <p><span class="font-bold">From:</span> Airtel Money — +260 97 000 0000</p>
+                    <p><span class="font-bold">To:</span> Bank of Zambia — 1234567890</p>
+                    <p><span class="font-bold">Estimated Completion:</span> Jun 15, 2026</p>
                 </div>
 
                 {{-- Tracking Steps --}}
                 <div class="relative border-l-2 border-[#e9ec3c] pl-6 space-y-6">
                     <div>
                         <span class="absolute -left-3 w-6 h-6 bg-[#dc3534] rounded-full border-2 border-white"></span>
-                        <p class="font-semibold text-[#222222]">Dar es Salaam Warehouse</p>
-                        <p class="text-sm text-gray-600">Picked up on Oct 1, 2025 – 08:30</p>
+                        <p class="font-semibold text-[#222222]">Sender Funded</p>
+                        <p class="text-sm text-gray-600">Jun 14, 2026 – 09:15</p>
                     </div>
 
                     <div>
                         <span class="absolute -left-3 w-6 h-6 bg-[#e9ec3c] rounded-full border-2 border-white"></span>
-                        <p class="font-semibold text-[#222222]">On the Road</p>
-                        <p class="text-sm text-gray-600">Departed border checkpoint on Oct 2, 2025 – 14:00</p>
+                        <p class="font-semibold text-[#222222]">Processing</p>
+                        <p class="text-sm text-gray-600">Jun 14, 2026 – 09:20 — FX conversion completed</p>
                     </div>
 
                     <div>
                         <span class="absolute -left-3 w-6 h-6 bg-gray-300 rounded-full border-2 border-white"></span>
-                        <p class="font-semibold text-[#222222]">Kigali Distribution Center</p>
-                        <p class="text-sm text-gray-600">Expected arrival: Oct 9, 2025</p>
+                        <p class="font-semibold text-[#222222]">Recipient Payout</p>
+                        <p class="text-sm text-gray-600">Expected: Jun 15, 2026</p>
                     </div>
                 </div>
             </div>
