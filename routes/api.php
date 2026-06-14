@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Admin\DisputeMessageController as AdminDisputeMessa
 use App\Http\Controllers\Api\Admin\PlatformFeeController as AdminPlatformFeeController;
 use App\Http\Controllers\Api\Admin\ReferencePriceController as AdminReferencePriceController;
 use App\Http\Controllers\Api\Admin\RevenueController as AdminRevenueController;
+use App\Http\Controllers\Api\Admin\RatingController as AdminRatingController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -171,6 +172,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/revenue/summary', [AdminRevenueController::class, 'summary']);
         Route::get('/revenue/by-pair', [AdminRevenueController::class, 'byPair']);
         Route::get('/revenue/totals', [AdminRevenueController::class, 'totals']);
+
+        // P2P Admin — Ratings
+        Route::get('/ratings', [AdminRatingController::class, 'index']);
 
         // Support System
         Route::prefix('support')->group(function () {

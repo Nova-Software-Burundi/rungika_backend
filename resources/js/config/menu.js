@@ -9,6 +9,7 @@ import {
     Megaphone,
     BarChart3,
     TrendingUp,
+    Star,
 } from "lucide-vue-next";
 
 export const menu = [
@@ -22,6 +23,7 @@ export const menu = [
     { label: "Fees", icon: Coins, to: "/platform-fees" },
     { label: "Prices", icon: TrendingUp, to: "/reference-prices" },
     { label: "Revenue", icon: BarChart3, to: "/revenue" },
+    { label: "Ratings", icon: Star, to: "/ratings" },
     { label: "Support", icon: LifeBuoy, to: "/support" },
     { label: "Settings", icon: Settings, to: "/settings" },
 ];
