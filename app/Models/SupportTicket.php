@@ -26,6 +26,9 @@ class SupportTicket extends Model
         'due_at',
         'resolved_at',
         'closed_at',
+        'sla_first_response_due_at',
+        'sla_first_response_at',
+        'sla_resolution_due_at',
     ];
 
     protected $casts = [

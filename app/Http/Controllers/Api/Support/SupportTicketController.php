@@ -10,11 +10,15 @@ class SupportTicketController extends Controller
 {
     public function index(Request $request)
     {
-        $query = SupportTicket::with(['category','assignedTo'])
+        $query = SupportTicket::with(['category', 'assignee'])
             ->latest();
 
-        if (!auth()->user()->isStaff()) {
+        if (!auth()->user()->hasRole(['super_admin', 'Admin', 'Operator', 'Agent'])) {
             $query->where('user_id', auth()->id());
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('support_category_id', $request->category_id);
         }
 
         if ($request->filled('status')) {
@@ -40,7 +44,6 @@ class SupportTicketController extends Controller
         $ticket = SupportTicket::create([
             ...$data,
             'user_id' => auth()->id(),
-            'reference' => SupportTicket::generateReference(),
         ]);
 
         $ticket->events()->create([
@@ -53,26 +56,30 @@ class SupportTicketController extends Controller
 
     public function show(SupportTicket $ticket)
     {
-        $this->authorize('view', $ticket);
-
         return $ticket->load([
-            'messages.user',
-            'events.user',
+            'messages.author',
+            'events.actor',
             'category',
-            'assignedTo',
+            'assignee',
         ]);
     }
 
     public function updateStatus(Request $request, SupportTicket $ticket)
     {
-        $this->authorize('update', $ticket);
-
         $request->validate([
             'status' => 'required|in:open,in_progress,waiting,resolved,closed',
         ]);
 
         $old = $ticket->status;
         $ticket->update(['status' => $request->status]);
+
+        if ($request->status === 'resolved') {
+            $ticket->update(['resolved_at' => now()]);
+        }
+
+        if ($request->status === 'closed') {
+            $ticket->update(['closed_at' => now()]);
+        }
 
         $ticket->events()->create([
             'user_id' => auth()->id(),

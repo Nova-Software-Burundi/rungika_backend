@@ -10,8 +10,6 @@ class SupportTicketMessageController extends Controller
 {
     public function store(Request $request, SupportTicket $ticket)
     {
-        $this->authorize('view', $ticket);
-
         $data = $request->validate([
             'message' => 'required|string',
             'is_internal' => 'boolean',
@@ -23,7 +21,7 @@ class SupportTicketMessageController extends Controller
         ]);
 
         if (
-            auth()->user()->isStaff()
+            auth()->user()->hasRole(['super_admin', 'Admin', 'Operator', 'Agent'])
             && !$request->boolean('is_internal')
             && is_null($ticket->sla_first_response_at)
         ) {
@@ -31,7 +29,6 @@ class SupportTicketMessageController extends Controller
                 'sla_first_response_at' => now(),
             ]);
         }
-
 
         $ticket->events()->create([
             'user_id' => auth()->id(),

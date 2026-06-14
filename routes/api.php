@@ -205,6 +205,10 @@ Route::middleware('auth')->group(function () {
         // Support System
         Route::prefix('support')->group(function () {
             Route::get('categories', [SupportCategoryController::class, 'index']);
+            Route::get('categories/all', [SupportCategoryController::class, 'all']);
+            Route::post('categories', [SupportCategoryController::class, 'store']);
+            Route::put('categories/{supportCategory}', [SupportCategoryController::class, 'update']);
+            Route::delete('categories/{supportCategory}', [SupportCategoryController::class, 'destroy']);
             Route::get('tickets', [SupportTicketController::class, 'index']);
             Route::post('tickets', [SupportTicketController::class, 'store']);
             Route::get('tickets/{ticket}', [SupportTicketController::class, 'show']);
