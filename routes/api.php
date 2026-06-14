@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\Mobile\AdController as MobileAdController;
 use App\Http\Controllers\Api\Mobile\ReferenceController as MobileReferenceController;
 use App\Http\Controllers\Api\Mobile\TradeController as MobileTradeController;
 use App\Http\Controllers\Api\Mobile\RatingController as MobileRatingController;
+use App\Http\Controllers\Api\Mobile\DeviceTokenController as MobileDeviceTokenController;
+use App\Http\Controllers\Api\Mobile\NotificationController as MobileNotificationController;
 use App\Http\Controllers\Api\Admin\AssetController as AdminAssetController;
 use App\Http\Controllers\Api\Admin\PaymentMethodController as AdminPaymentMethodController;
 use App\Http\Controllers\Api\Admin\AdvertisementController as AdminAdvertisementController;
@@ -22,6 +24,8 @@ use App\Http\Controllers\Api\Admin\PlatformFeeController as AdminPlatformFeeCont
 use App\Http\Controllers\Api\Admin\ReferencePriceController as AdminReferencePriceController;
 use App\Http\Controllers\Api\Admin\RevenueController as AdminRevenueController;
 use App\Http\Controllers\Api\Admin\RatingController as AdminRatingController;
+use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementController;
+use App\Http\Controllers\Api\Admin\ExportController as AdminExportController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -82,6 +86,16 @@ Route::prefix('mobile')->middleware('auth:sanctum')->group(function () {
     Route::post('/trades/{trade}/rate', [MobileRatingController::class, 'store']);
     Route::get('/users/{user}/ratings', [MobileRatingController::class, 'userRatings']);
     Route::get('/users/{user}/stats', [MobileRatingController::class, 'stats']);
+
+    // P2P Notifications
+    Route::get('/notifications', [MobileNotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [MobileNotificationController::class, 'read']);
+    Route::post('/notifications/read-all', [MobileNotificationController::class, 'readAll']);
+    Route::get('/notifications/unread-count', [MobileNotificationController::class, 'unreadCount']);
+
+    // Device Tokens
+    Route::post('/device-tokens', [MobileDeviceTokenController::class, 'store']);
+    Route::delete('/device-tokens/{token}', [MobileDeviceTokenController::class, 'destroy']);
 });
 
 // Protected Routes (Session-based via Vue Portal)
@@ -175,6 +189,17 @@ Route::middleware('auth')->group(function () {
 
         // P2P Admin — Ratings
         Route::get('/ratings', [AdminRatingController::class, 'index']);
+
+        // P2P Admin — Announcements
+        Route::get('/announcements', [AdminAnnouncementController::class, 'index']);
+        Route::post('/announcements', [AdminAnnouncementController::class, 'store']);
+        Route::get('/announcements/{announcement}', [AdminAnnouncementController::class, 'show']);
+        Route::put('/announcements/{announcement}', [AdminAnnouncementController::class, 'update']);
+        Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy']);
+        Route::post('/announcements/{announcement}/toggle-publish', [AdminAnnouncementController::class, 'togglePublish']);
+
+        // P2P Admin — Exports
+        Route::get('/exports/trades', [AdminExportController::class, 'trades']);
 
         // Support System
         Route::prefix('support')->group(function () {

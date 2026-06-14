@@ -24,6 +24,7 @@ export const menu = [
     { label: "Prices", icon: TrendingUp, to: "/reference-prices" },
     { label: "Revenue", icon: BarChart3, to: "/revenue" },
     { label: "Ratings", icon: Star, to: "/ratings" },
+    { label: "Announcements", icon: Megaphone, to: "/announcements" },
     { label: "Support", icon: LifeBuoy, to: "/support" },
     { label: "Settings", icon: Settings, to: "/settings" },
 ];
