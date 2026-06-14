@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\AssetController as AdminAssetController;
 use App\Http\Controllers\Api\Admin\PaymentMethodController as AdminPaymentMethodController;
 use App\Http\Controllers\Api\Admin\AdvertisementController as AdminAdvertisementController;
 use App\Http\Controllers\Api\Admin\TradeController as AdminTradeController;
+use App\Http\Controllers\Api\Admin\DisputeMessageController as AdminDisputeMessageController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -69,6 +70,7 @@ Route::prefix('mobile')->middleware('auth:sanctum')->group(function () {
     Route::post('/trades/{trade}/cancel', [MobileTradeController::class, 'cancel']);
     Route::post('/trades/{trade}/dispute', [MobileTradeController::class, 'dispute']);
     Route::get('/trades/{trade}/messages', [MobileTradeController::class, 'messages']);
+    Route::post('/trades/{trade}/messages', [MobileTradeController::class, 'sendMessage']);
 });
 
 // Protected Routes (Session-based via Vue Portal)
@@ -134,6 +136,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/trades/{trade}', [AdminTradeController::class, 'show']);
         Route::post('/trades/{trade}/cancel', [AdminTradeController::class, 'cancel']);
         Route::post('/trades/{trade}/resolve-dispute', [AdminTradeController::class, 'resolveDispute']);
+        Route::get('/trades/{trade}/dispute-messages', [AdminDisputeMessageController::class, 'index']);
+        Route::post('/trades/{trade}/dispute-messages', [AdminDisputeMessageController::class, 'store']);
 
         // Support System
         Route::prefix('support')->group(function () {

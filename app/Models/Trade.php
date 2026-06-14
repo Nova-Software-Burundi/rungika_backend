@@ -77,4 +77,9 @@ class Trade extends Model
     {
         return $this->hasMany(TradeEvent::class);
     }
+
+    public function disputeMessages()
+    {
+        return $this->hasMany(DisputeMessage::class);
+    }
 }

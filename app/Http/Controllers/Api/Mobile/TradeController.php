@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Models\Trade;
-use App\Models\TradeEvent;
-use App\Models\Advertisement;
+use App\Models\DisputeMessage;
 use App\Services\TradeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -140,6 +139,37 @@ class TradeController extends Controller
             abort(403);
         }
 
-        return $trade->events()->with('actor')->orderBy('created_at', 'desc')->get();
+        return $trade->disputeMessages()->with('user')->orderBy('created_at', 'asc')->get();
+    }
+
+    public function sendMessage(Request $request, Trade $trade)
+    {
+        $user = auth()->user();
+        if ($trade->buyer_id !== $user->id && $trade->seller_id !== $user->id) {
+            abort(403);
+        }
+
+        if ($trade->status !== 'disputed') {
+            return response()->json(['message' => 'Trade is not in dispute.'], 422);
+        }
+
+        $data = $request->validate([
+            'message'    => 'required|string|max:2000',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store('dispute-attachments', 'public');
+        }
+
+        $msg = DisputeMessage::create([
+            'trade_id'        => $trade->id,
+            'user_id'         => $user->id,
+            'message'         => $data['message'],
+            'attachment_path' => $attachmentPath,
+        ]);
+
+        return response()->json($msg->load('user'), 201);
     }
 }

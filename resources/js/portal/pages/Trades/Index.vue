@@ -133,10 +133,30 @@
                 </div>
             </div>
 
-            <div v-if="selected.status === 'disputed'" class="bg-amber-50 rounded-2xl border border-amber-200 shadow-sm p-6">
-                <p class="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-2">Dispute Reason</p>
-                <p class="font-bold text-sm text-amber-800">{{ selected.dispute_reason }}</p>
-                <button @click="openResolveModal(selected)" class="mt-4 rounded-xl bg-amber-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-amber-500">Resolve Dispute</button>
+            <div v-if="selected.status === 'disputed'" class="space-y-6">
+                <div class="bg-amber-50 rounded-2xl border border-amber-200 shadow-sm p-6">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-2">Dispute Reason</p>
+                    <p class="font-bold text-sm text-amber-800">{{ selected.dispute_reason }}</p>
+                    <button @click="openResolveModal(selected)" class="mt-4 rounded-xl bg-amber-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-amber-500">Resolve Dispute</button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Dispute Chat</p>
+                    <div class="space-y-3 max-h-80 overflow-y-auto mb-4 p-3 bg-slate-50 rounded-xl">
+                        <div v-for="msg in disputeMessages" :key="msg.id" class="flex gap-3" :class="msg.user_id === currentUserId ? 'justify-end' : ''">
+                            <div class="max-w-[80%] rounded-xl px-4 py-2" :class="msg.user_id === currentUserId ? 'bg-blue-500 text-white' : 'bg-white border border-slate-200'">
+                                <p class="text-[10px] font-black uppercase mb-1 opacity-60">{{ msg.user?.name }}</p>
+                                <p class="text-sm font-medium">{{ msg.message }}</p>
+                                <p class="text-[10px] mt-1 opacity-50">{{ timeAgo(msg.created_at) }}</p>
+                            </div>
+                        </div>
+                        <p v-if="!disputeMessages.length" class="text-xs font-black text-slate-400 text-center py-8">No messages yet.</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type a message..." class="flex-1 rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold" />
+                        <button @click="sendMessage" class="rounded-xl bg-slate-800 px-5 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-slate-700">Send</button>
+                    </div>
+                </div>
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
@@ -202,6 +222,9 @@ const trades = ref({ data: [], current_page: 1, last_page: 1 });
 const filters = ref({ reference: '', status: '' });
 const showDetail = ref(false);
 const selected = ref({});
+const disputeMessages = ref([]);
+const newMessage = ref('');
+const currentUserId = ref(null);
 const showCancelModal = ref(false);
 const cancelTarget = ref(null);
 const showResolveModal = ref(false);
@@ -272,6 +295,14 @@ const viewTrade = async (trade) => {
     const { data } = await api.get(`/portal/trades/${trade.id}`);
     selected.value = data;
     showDetail.value = true;
+    if (data.status === 'disputed') {
+        const { data: msgs } = await api.get(`/portal/trades/${trade.id}/dispute-messages`);
+        disputeMessages.value = msgs;
+    }
+    if (!currentUserId.value) {
+        const { data: user } = await api.get('/user');
+        currentUserId.value = user.id;
+    }
 };
 
 const openCancelModal = (trade) => {
@@ -291,6 +322,15 @@ const openResolveModal = (trade) => {
     resolveOutcome.value = 'released';
     resolveReason.value = '';
     showResolveModal.value = true;
+};
+
+const sendMessage = async () => {
+    if (!newMessage.value.trim()) return;
+    const { data } = await api.post(`/portal/trades/${selected.value.id}/dispute-messages`, {
+        message: newMessage.value,
+    });
+    disputeMessages.value.push(data);
+    newMessage.value = '';
 };
 
 const confirmResolve = async () => {
