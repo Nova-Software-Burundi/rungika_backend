@@ -11,9 +11,11 @@ use App\Http\Controllers\Api\Mobile\ProfileController as MobileProfileController
 use App\Http\Controllers\Api\Mobile\TransferController as MobileTransferController;
 use App\Http\Controllers\Api\Mobile\AdController as MobileAdController;
 use App\Http\Controllers\Api\Mobile\ReferenceController as MobileReferenceController;
+use App\Http\Controllers\Api\Mobile\TradeController as MobileTradeController;
 use App\Http\Controllers\Api\Admin\AssetController as AdminAssetController;
 use App\Http\Controllers\Api\Admin\PaymentMethodController as AdminPaymentMethodController;
 use App\Http\Controllers\Api\Admin\AdvertisementController as AdminAdvertisementController;
+use App\Http\Controllers\Api\Admin\TradeController as AdminTradeController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -56,6 +58,17 @@ Route::prefix('mobile')->middleware('auth:sanctum')->group(function () {
     Route::get('/ads/{advertisement}', [MobileAdController::class, 'show']);
     Route::put('/ads/{advertisement}', [MobileAdController::class, 'update']);
     Route::delete('/ads/{advertisement}', [MobileAdController::class, 'destroy']);
+
+    // P2P Trades
+    Route::get('/trades', [MobileTradeController::class, 'index']);
+    Route::post('/trades', [MobileTradeController::class, 'store']);
+    Route::get('/trades/{trade}', [MobileTradeController::class, 'show']);
+    Route::post('/trades/{trade}/confirm', [MobileTradeController::class, 'confirm']);
+    Route::post('/trades/{trade}/mark-paid', [MobileTradeController::class, 'markPaid']);
+    Route::post('/trades/{trade}/release', [MobileTradeController::class, 'release']);
+    Route::post('/trades/{trade}/cancel', [MobileTradeController::class, 'cancel']);
+    Route::post('/trades/{trade}/dispute', [MobileTradeController::class, 'dispute']);
+    Route::get('/trades/{trade}/messages', [MobileTradeController::class, 'messages']);
 });
 
 // Protected Routes (Session-based via Vue Portal)
@@ -115,6 +128,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/ads/{advertisement}', [AdminAdvertisementController::class, 'show']);
         Route::put('/ads/{advertisement}', [AdminAdvertisementController::class, 'update']);
         Route::delete('/ads/{advertisement}', [AdminAdvertisementController::class, 'destroy']);
+
+        // P2P Admin — Trades
+        Route::get('/trades', [AdminTradeController::class, 'index']);
+        Route::get('/trades/{trade}', [AdminTradeController::class, 'show']);
+        Route::post('/trades/{trade}/cancel', [AdminTradeController::class, 'cancel']);
+        Route::post('/trades/{trade}/resolve-dispute', [AdminTradeController::class, 'resolveDispute']);
 
         // Support System
         Route::prefix('support')->group(function () {

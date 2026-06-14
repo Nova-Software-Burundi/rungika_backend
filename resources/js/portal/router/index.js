@@ -23,6 +23,7 @@ const router = createRouter({
                 { path: "assets",           name: "Assets",          component: () => import("../pages/Assets/Index.vue") },
                 { path: "payment-methods",  name: "PaymentMethods",  component: () => import("../pages/PaymentMethods/Index.vue") },
                 { path: "ads",              name: "Ads",             component: () => import("../pages/Ads/Index.vue") },
+                { path: "trades",           name: "Trades",          component: () => import("../pages/Trades/Index.vue") },
                 { path: "support",         name: "Support",         component: () => import("../pages/Support/Index.vue") },
                 { path: "settings",        name: "Settings",        component: () => import("../pages/Settings.vue") },
             ],

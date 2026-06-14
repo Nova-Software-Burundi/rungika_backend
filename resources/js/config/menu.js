@@ -15,6 +15,7 @@ export const menu = [
     { label: "Currencies", icon: CircleDollarSign, to: "/currencies" },
     { label: "Assets", icon: Coins, to: "/assets" },
     { label: "Payment Methods", icon: CreditCard, to: "/payment-methods" },
+    { label: "Trades", icon: ArrowLeftRight, to: "/trades" },
     { label: "Ads", icon: Megaphone, to: "/ads" },
     { label: "Support", icon: LifeBuoy, to: "/support" },
     { label: "Settings", icon: Settings, to: "/settings" },
