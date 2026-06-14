@@ -43,6 +43,33 @@ class AuthController extends Controller
         ]);
     }
 
+    public function mobileLogin(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'message' => 'Invalid email or password'
+            ], 401);
+        }
+
+        $user = Auth::user();
+        $token = $user->createToken('mobile-auth')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ]
+        ]);
+    }
+
     public function login(Request $request) // Token-based for Mobile/API
     {
         $request->validate([

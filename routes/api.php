@@ -40,6 +40,7 @@ Route::prefix('mobile/auth')->group(function () {
     Route::post('/request-whatsapp-otp', [MobileAuthController::class, 'requestWhatsAppOtp']);
     Route::post('/verify-whatsapp-otp', [MobileAuthController::class, 'verifyWhatsAppOtp']);
     Route::post('/verify-firebase-phone', [MobileAuthController::class, 'verifyFirebasePhone']);
+    Route::post('/login', [AuthController::class, 'mobileLogin']);
     Route::post('/logout', [MobileAuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
