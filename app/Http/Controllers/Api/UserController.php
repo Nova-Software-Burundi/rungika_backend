@@ -38,7 +38,10 @@ class UserController extends Controller
 
     public function show(User $user): JsonResponse
     {
-        return response()->json($user->load('roles'));
+        $user->load('roles');
+        $user->loadCount('ratingsReceived');
+        $user->average_rating = round($user->averageRating() ?? 0, 1);
+        return response()->json($user);
     }
 
     public function approveKyc(Request $request, User $user): JsonResponse
@@ -59,6 +62,43 @@ class UserController extends Controller
         ]);
 
         return response()->json(['message' => 'User suspended.', 'user' => $user->fresh()->load('roles')]);
+    }
+
+    public function setKycTier(Request $request, User $user): JsonResponse
+    {
+        $data = $request->validate(['kyc_tier' => 'required|integer|min:0|max:3']);
+
+        $user->update(['kyc_tier' => $data['kyc_tier']]);
+
+        return response()->json(['message' => "KYC tier set to {$data['kyc_tier']}.", 'user' => $user->fresh()->load('roles')]);
+    }
+
+    public function flag(Request $request, User $user): JsonResponse
+    {
+        $data = $request->validate([
+            'flagged'        => 'required|boolean',
+            'flagged_reason' => 'nullable|string|max:500',
+        ]);
+
+        $user->update([
+            'flagged'        => $data['flagged'],
+            'flagged_reason' => $data['flagged_reason'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => $data['flagged'] ? 'User flagged.' : 'User unflagged.',
+            'user'    => $user->fresh()->load('roles'),
+        ]);
+    }
+
+    public function toggleTrading(Request $request, User $user): JsonResponse
+    {
+        $user->update(['trading_enabled' => !$user->trading_enabled]);
+
+        return response()->json([
+            'message' => $user->trading_enabled ? 'Trading enabled.' : 'Trading disabled.',
+            'user'    => $user->fresh()->load('roles'),
+        ]);
     }
 
     public function assignRole(Request $request, User $user): JsonResponse

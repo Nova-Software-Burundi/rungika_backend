@@ -24,6 +24,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'kyc_status',
         'kyc_verified_at',
+        'kyc_tier',
+        'flagged',
+        'flagged_reason',
+        'trading_enabled',
     ];
 
     protected $hidden = [
@@ -36,6 +40,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'kyc_verified_at' => 'datetime',
+            'kyc_tier' => 'integer',
+            'flagged' => 'boolean',
+            'trading_enabled' => 'boolean',
             'password' => 'hashed',
         ];
     }
@@ -92,4 +99,23 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(MoneyTransfer::class, 'assigned_agent_id');
     }
 
+    public function ratingsGiven()
+    {
+        return $this->hasMany(UserRating::class, 'rater_id');
+    }
+
+    public function ratingsReceived()
+    {
+        return $this->hasMany(UserRating::class, 'rated_user_id');
+    }
+
+    public function averageRating()
+    {
+        return $this->ratingsReceived()->avg('rating');
+    }
+
+    public function ratingCount()
+    {
+        return $this->ratingsReceived()->count();
+    }
 }

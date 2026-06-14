@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Mobile\TransferController as MobileTransferControll
 use App\Http\Controllers\Api\Mobile\AdController as MobileAdController;
 use App\Http\Controllers\Api\Mobile\ReferenceController as MobileReferenceController;
 use App\Http\Controllers\Api\Mobile\TradeController as MobileTradeController;
+use App\Http\Controllers\Api\Mobile\RatingController as MobileRatingController;
 use App\Http\Controllers\Api\Admin\AssetController as AdminAssetController;
 use App\Http\Controllers\Api\Admin\PaymentMethodController as AdminPaymentMethodController;
 use App\Http\Controllers\Api\Admin\AdvertisementController as AdminAdvertisementController;
@@ -75,6 +76,11 @@ Route::prefix('mobile')->middleware('auth:sanctum')->group(function () {
     Route::post('/trades/{trade}/dispute', [MobileTradeController::class, 'dispute']);
     Route::get('/trades/{trade}/messages', [MobileTradeController::class, 'messages']);
     Route::post('/trades/{trade}/messages', [MobileTradeController::class, 'sendMessage']);
+
+    // P2P Ratings
+    Route::post('/trades/{trade}/rate', [MobileRatingController::class, 'store']);
+    Route::get('/users/{user}/ratings', [MobileRatingController::class, 'userRatings']);
+    Route::get('/users/{user}/stats', [MobileRatingController::class, 'stats']);
 });
 
 // Protected Routes (Session-based via Vue Portal)
@@ -115,6 +121,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/users/{user}/approve-kyc', [UserController::class, 'approveKyc']);
         Route::post('/users/{user}/suspend', [UserController::class, 'suspend']);
         Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole']);
+        Route::post('/users/{user}/kyc-tier', [UserController::class, 'setKycTier']);
+        Route::post('/users/{user}/flag', [UserController::class, 'flag']);
+        Route::post('/users/{user}/toggle-trading', [UserController::class, 'toggleTrading']);
 
         // P2P Admin — Reference Data
         Route::get('/assets', [AdminAssetController::class, 'index']);
