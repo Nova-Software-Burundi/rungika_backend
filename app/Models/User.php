@@ -9,11 +9,9 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable implements FilamentUser, MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
@@ -40,12 +38,6 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'kyc_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
-    }
-
-    public function canAccessPanel(Panel $panel): bool
-    {
-        // Your logic here to authorize a user
-        return $this->hasAnyRole(['super_admin', 'admin', 'operator']);
     }
 
     public function enableTwoFactorAuthentication(): void
