@@ -1,6 +1,7 @@
 import {
     ArrowLeftRight,
     CircleDollarSign,
+    Globe,
     LifeBuoy,
     Settings,
     ShieldCheck,
@@ -15,6 +16,7 @@ import {
 export const menu = [
     { label: "Transfers", icon: ArrowLeftRight, to: "/transfers" },
     { label: "Users", icon: ShieldCheck, to: "/users" },
+    { label: "Countries", icon: Globe, to: "/countries" },
     { label: "Currencies", icon: CircleDollarSign, to: "/currencies" },
     { label: "Assets", icon: Coins, to: "/assets" },
     { label: "Payment Methods", icon: CreditCard, to: "/payment-methods" },

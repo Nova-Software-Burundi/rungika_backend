@@ -19,6 +19,7 @@ const router = createRouter({
                 { path: "", redirect: "/transfers" },
                 { path: "transfers",       name: "Transfers",       component: () => import("../pages/Transfers/Index.vue") },
                 { path: "users",           name: "Users",           component: () => import("../pages/Users/Index.vue") },
+                { path: "countries",       name: "Countries",       component: () => import("../pages/Countries/Index.vue") },
                 { path: "currencies",      name: "Currencies",      component: () => import("../pages/Currencies/Index.vue") },
                 { path: "assets",           name: "Assets",          component: () => import("../pages/Assets/Index.vue") },
                 { path: "payment-methods",  name: "PaymentMethods",  component: () => import("../pages/PaymentMethods/Index.vue") },

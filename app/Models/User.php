@@ -28,6 +28,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'flagged',
         'flagged_reason',
         'trading_enabled',
+        'country_id',
+        'preferred_currency_id',
     ];
 
     protected $hidden = [
@@ -117,5 +119,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function ratingCount()
     {
         return $this->ratingsReceived()->count();
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function preferredCurrency()
+    {
+        return $this->belongsTo(Currency::class, 'preferred_currency_id');
     }
 }

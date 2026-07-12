@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\Admin\RevenueController as AdminRevenueController;
 use App\Http\Controllers\Api\Admin\RatingController as AdminRatingController;
 use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Api\Admin\ExportController as AdminExportController;
+use App\Http\Controllers\Api\Admin\CountryController as AdminCountryController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -33,6 +34,11 @@ use Illuminate\Http\Request;
 // Public Routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/portal/login', [AuthController::class, 'portalLogin']);
+
+// Public Reference Data (no auth needed)
+Route::get('/countries', function () {
+    return \App\Models\Country::where('is_active', true)->orderBy('name')->get();
+});
 
 // Mobile Auth Routes (public)
 Route::prefix('mobile/auth')->group(function () {
@@ -119,6 +125,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/transfers/{moneyTransfer}/confirm-usdt', [MoneyTransferController::class, 'confirmUsdt']);
         Route::post('/transfers/{moneyTransfer}/payout-proof', [MoneyTransferController::class, 'uploadPayoutProof']);
         Route::patch('/transfers/{moneyTransfer}/status', [MoneyTransferController::class, 'updateStatus']);
+
+        // Country Management
+        Route::get('/countries', [AdminCountryController::class, 'index']);
+        Route::post('/countries', [AdminCountryController::class, 'store']);
+        Route::get('/countries/{country}', [AdminCountryController::class, 'show']);
+        Route::put('/countries/{country}', [AdminCountryController::class, 'update']);
+        Route::delete('/countries/{country}', [AdminCountryController::class, 'destroy']);
+        Route::post('/countries/seed', function () {
+            \Illuminate\Support\Facades\Artisan::call('countries:seed');
+            return response()->json(['message' => 'Countries seeded successfully.']);
+        })->name('countries.seed');
 
         // Currencies
         Route::get('/currencies', [CurrencyController::class, 'index']);
