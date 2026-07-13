@@ -50,8 +50,8 @@ Route::prefix('mobile/auth')->group(function () {
     Route::post('/logout', [MobileAuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
-// Mobile App Routes (Protected via Sanctum)
-Route::prefix('mobile')->middleware('auth:sanctum')->group(function () {
+// Mobile App Routes (Protected via Sanctum + approval gate)
+Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(function () {
     Route::get('/profile', [MobileProfileController::class, 'show']);
     Route::put('/profile', [MobileProfileController::class, 'update']);
 
@@ -106,7 +106,7 @@ Route::prefix('mobile')->middleware('auth:sanctum')->group(function () {
 });
 
 // Protected Routes (Session-based via Vue Portal)
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'approved'])->group(function () {
 
     Route::get('/user', function (Request $request) {
         return $request->user();

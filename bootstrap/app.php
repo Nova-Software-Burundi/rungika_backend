@@ -29,6 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,
         ]);
+
+        $middleware->alias([
+            'approved' => \App\Http\Middleware\CheckApproved::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
