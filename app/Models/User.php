@@ -130,4 +130,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsTo(Currency::class, 'preferred_currency_id');
     }
+
+    public function apiKeys()
+    {
+        return $this->hasMany(\App\Models\ApiKey::class);
+    }
 }

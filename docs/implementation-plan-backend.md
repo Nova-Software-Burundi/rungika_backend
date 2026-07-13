@@ -507,3 +507,74 @@ resources/js/portal/pages/Users/Index.vue  — show country/agent status
 | 11 | **Portal: Transfers page adaptation** | Reflect new workflow |
 | 12 | **User self-reports** | User visibility |
 | 13 | **Role gating** | Production hardening |
+
+---
+
+## Phase 10: Double Auth — Session + API Key
+
+### Concept
+A single middleware (`auth.api_key`) that bridges API key auth into the same `web` guard that session auth uses, so downstream code (`$request->user()`, Spatie role checks, etc.) works identically regardless of how authentication was established.
+
+### 10.1 Create `api_keys` Migration
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| id | bigIncrements | |
+| user_id | FK->users, nullable, nullOnDelete | Owner of key |
+| name | string | Human label (e.g. "Production App") |
+| key | string(64), unique | SHA-256 hash of the plaintext key |
+| permissions | json, nullable | Granular permission overrides |
+| allowed_ips | json, nullable | IP allowlist |
+| last_used_at | timestamp, nullable | Track usage |
+| expires_at | timestamp, nullable | Auto-expiry |
+| is_active | boolean, default true | Soft revoke |
+| timestamps | | |
+
+### 10.2 `ApiKey` Model
+
+- `$casts`: `permissions` (array), `allowed_ips` (array), `is_active` (boolean), `last_used_at` (datetime), `expires_at` (datetime)
+- `belongsTo(User::class)`
+
+### 10.3 `ApiKeyMiddleware`
+
+```php
+handle(Request):
+  key = X-API-Key header OR api_key query param
+  if !key → 401 "API key is missing"
+
+  apiKey = ApiKey where key = sha256(incoming_key), is_active = true, (expires_at null or > now)
+  if !apiKey → 401 "Invalid or inactive API key"
+
+  if apiKey.allowed_ips is set:
+    if request.ip not in allowed_ips → 403 "IP not allowed"
+
+  apiKey.update last_used_at = now()
+
+  Auth::shouldUse('web')
+  if apiKey.user_id:
+      Auth::loginUsingId(apiKey.user_id)
+
+  request->attributes->set('auth.api_key', true)
+  request->attributes->set('api_key', apiKey)
+
+  return next(request)
+```
+
+### 10.4 Route Groups
+
+| Routes | Middleware | Auth method |
+|--------|-----------|-------------|
+| `/api/portal/*` | `auth` (default `web` guard) | Session cookie (SPA) |
+| `/api/v1/*` | `auth.api_key` | `X-API-Key` header or `?api_key=` |
+
+### 10.5 `ApiKeyController` (CRUD)
+
+- `index`: list keys for current user (never expose key value)
+- `store`: generate key with `ml_` prefix + random chars, store SHA-256 hash, return plaintext once
+- `destroy` / revoke: set `is_active = false`
+
+### Key Design Decisions
+- **No Bearer token conflict** — API keys use `X-API-Key` header, not `Authorization`, so Sanctum tokens and API keys coexist
+- **Session bridging** — `Auth::shouldUse('web')` + `Auth::loginUsingId()` makes Spatie middleware, `$request->user()`, and `Auth::user()` work identically
+- **Plaintext returned once** — database stores only SHA-256 hash
+- **IP allowlisting** — optional per-key restriction

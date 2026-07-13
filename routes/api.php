@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Admin\CountryController as AdminCountryController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Api\Mobile\ReportController as MobileReportController;
+use App\Http\Controllers\Api\ApiKeyController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -293,4 +294,11 @@ Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator'])->grou
             Route::post('tickets/{ticket}/messages', [SupportTicketMessageController::class, 'store']);
         });
     });
+});
+
+// API Key-authenticated routes — use X-API-Key header or ?api_key= query param
+Route::prefix('v1')->middleware('auth.api_key')->group(function () {
+    Route::get('/keys', [ApiKeyController::class, 'index']);
+    Route::post('/keys', [ApiKeyController::class, 'store']);
+    Route::delete('/keys/{apiKey}', [ApiKeyController::class, 'destroy']);
 });
