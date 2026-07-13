@@ -190,6 +190,7 @@ class MobileAuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50', 'unique:users,phone'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'country_id' => ['nullable', 'integer', 'exists:countries,id'],
         ]);
 
         $user = DB::transaction(function () use ($data) {
@@ -199,6 +200,7 @@ class MobileAuthController extends Controller
                 'email' => $data['email'] ?? $data['phone'] . '@mobile.user',
                 'password' => Hash::make(str()->random(32)),
                 'kyc_status' => 'pending',
+                'country_id' => $data['country_id'] ?? null,
             ]);
 
             $user->assignRole('Customer');

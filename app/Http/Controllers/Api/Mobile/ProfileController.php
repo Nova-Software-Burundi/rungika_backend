@@ -10,7 +10,7 @@ class ProfileController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
-        $user = $request->user()->load('roles');
+        $user = $request->user()->load(['roles', 'country', 'preferredCurrency']);
 
         return response()->json([
             'user' => $user,
@@ -21,15 +21,24 @@ class ProfileController extends Controller
 
     public function update(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $user = $request->user();
 
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone' => ['sometimes', 'string', 'max:50', 'unique:users,phone,' . $user->id],
+            'country_id' => ['sometimes', 'integer', 'exists:countries,id'],
+            'preferred_currency_id' => ['sometimes', 'integer', 'exists:currencies,id'],
         ]);
 
-        $user->update($data);
+        $user->fill($data);
+        $user->save();
 
-        return response()->json(['user' => $user->fresh()->load('roles')]);
+        $user->load(['country', 'preferredCurrency', 'roles']);
+
+        return response()->json([
+            'message' => 'Profile updated.',
+            'user' => $user,
+        ]);
     }
 }

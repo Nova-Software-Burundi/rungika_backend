@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Mobile\TradeController as MobileTradeController;
 use App\Http\Controllers\Api\Mobile\RatingController as MobileRatingController;
 use App\Http\Controllers\Api\Mobile\DeviceTokenController as MobileDeviceTokenController;
 use App\Http\Controllers\Api\Mobile\NotificationController as MobileNotificationController;
+use App\Http\Controllers\Api\Mobile\AgentController as MobileAgentController;
 use App\Http\Controllers\Api\Admin\AssetController as AdminAssetController;
 use App\Http\Controllers\Api\Admin\PaymentMethodController as AdminPaymentMethodController;
 use App\Http\Controllers\Api\Admin\AdvertisementController as AdminAdvertisementController;
@@ -99,6 +100,17 @@ Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(functio
     Route::post('/notifications/{id}/read', [MobileNotificationController::class, 'read']);
     Route::post('/notifications/read-all', [MobileNotificationController::class, 'readAll']);
     Route::get('/notifications/unread-count', [MobileNotificationController::class, 'unreadCount']);
+
+    // Agent Marketplace
+    Route::get('/agents', [MobileAgentController::class, 'index']);
+    Route::get('/agents/{user}', [MobileAgentController::class, 'show']);
+
+    // Agent Self-Management
+    Route::patch('/agent/availability', [MobileAgentController::class, 'toggleAvailability']);
+    Route::post('/agent/profile', [MobileAgentController::class, 'updateProfile']);
+
+    // Online Ping
+    Route::post('/ping', [MobileAgentController::class, 'ping']);
 
     // Device Tokens
     Route::post('/device-tokens', [MobileDeviceTokenController::class, 'store']);
