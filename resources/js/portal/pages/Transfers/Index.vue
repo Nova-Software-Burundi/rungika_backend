@@ -3,7 +3,7 @@
         <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <h1 class="text-3xl font-black uppercase tracking-tight">Transfer Desk</h1>
-                <p class="mt-1 text-sm font-semibold text-slate-500">USDT receipt checks and local payout proof tracking</p>
+                <p class="mt-1 text-sm font-semibold text-slate-500">Remittance lifecycle: pending → accepted → executed → completed</p>
             </div>
             <button
                 @click="refresh"
@@ -166,6 +166,7 @@
                                     <th class="px-5 py-4">Parties</th>
                                     <th class="px-5 py-4">Amount</th>
                                     <th class="px-5 py-4">Status</th>
+                                    <th class="px-5 py-4">Debt</th>
                                     <th class="px-5 py-4 text-right">Created</th>
                                 </tr>
                             </thead>
@@ -173,27 +174,32 @@
                                 <tr v-for="transfer in transfers" :key="transfer.id" @click="selectTransfer(transfer)" class="cursor-pointer transition hover:bg-emerald-50/50" :class="selected?.id === transfer.id ? 'bg-emerald-50/70' : ''">
                                     <td class="px-5 py-4">
                                         <p class="font-black text-slate-900">{{ transfer.reference }}</p>
-                                        <p class="text-[10px] font-bold uppercase text-slate-400">{{ transfer.agent?.name || 'Unassigned' }}</p>
+                                        <p class="text-[10px] font-bold uppercase text-slate-400">{{ transfer.agent?.name || transfer.assigned_agent_id ? 'Agent' : 'Unassigned' }}</p>
                                     </td>
                                     <td class="px-5 py-4">
-                                        <p class="text-sm font-black text-slate-800">{{ transfer.sender_name }}</p>
-                                        <p class="text-xs font-semibold text-slate-500">{{ transfer.recipient_name }}</p>
+                                        <p class="text-sm font-black text-slate-800">{{ transfer.initiator?.name || transfer.sender_name }}</p>
+                                        <p class="text-xs font-semibold text-slate-500">{{ transfer.destinator_name || transfer.recipient_name }}</p>
                                     </td>
                                     <td class="px-5 py-4">
-                                        <p class="text-sm font-black text-slate-900">{{ formatMoney(transfer.send_amount, transfer.send_currency) }}</p>
-                                        <p class="text-xs font-semibold text-slate-500">{{ transfer.usdt_amount || '0.000000' }} USDT</p>
+                                        <p class="text-sm font-black text-slate-900">{{ formatMoney(transfer.send_amount, transfer.send_currency || 'USD') }}</p>
                                     </td>
                                     <td class="px-5 py-4">
                                         <span class="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest" :class="statusMeta(transfer.status).class">
                                             {{ statusMeta(transfer.status).label }}
                                         </span>
                                     </td>
+                                    <td class="px-5 py-4">
+                                        <span v-if="transfer.requester_debt && transfer.executor_debt" class="text-[10px] font-bold text-rose-600">Both</span>
+                                        <span v-else-if="transfer.requester_debt" class="text-[10px] font-bold text-amber-600">Requester</span>
+                                        <span v-else-if="transfer.executor_debt" class="text-[10px] font-bold text-orange-600">Executor</span>
+                                        <span v-else class="text-[10px] text-slate-300">—</span>
+                                    </td>
                                     <td class="px-5 py-4 text-right text-xs font-bold text-slate-500">
                                         {{ formatDate(transfer.created_at) }}
                                     </td>
                                 </tr>
                                 <tr v-if="!transfers.length && !loading">
-                                    <td colspan="5" class="px-5 py-16 text-center text-xs font-black uppercase tracking-widest text-slate-400">No transfers found</td>
+                                    <td colspan="6" class="px-5 py-16 text-center text-xs font-black uppercase tracking-widest text-slate-400">No transfers found</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -205,58 +211,80 @@
                         <div>
                             <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Selected Transfer</p>
                             <h2 class="text-2xl font-black tracking-tight">{{ selected.reference }}</h2>
-                            <p class="mt-1 text-sm font-semibold text-slate-500">{{ selected.sender_name }} to {{ selected.recipient_name }}</p>
+                            <p class="mt-1 text-sm font-semibold text-slate-500">{{ selected.initiator?.name || selected.sender_name }} → {{ selected.destinator_name || selected.recipient_name }}</p>
                         </div>
-                        <span class="w-fit rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest" :class="statusMeta(selected.status).class">
-                            {{ statusMeta(selected.status).label }}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span v-if="selected.hasDebt" class="rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-widest bg-rose-100 text-rose-700">Debt</span>
+                            <span class="w-fit rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest" :class="statusMeta(selected.status).class">
+                                {{ statusMeta(selected.status).label }}
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="grid gap-4 lg:grid-cols-3">
+                    <div class="grid gap-4 lg:grid-cols-4">
                         <div class="rounded-xl border border-slate-200 p-4">
-                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Transfer</p>
-                            <p class="mt-2 text-lg font-black">{{ formatMoney(selected.send_amount, selected.send_currency) }}</p>
-                            <p class="text-sm font-semibold text-slate-500">{{ selected.usdt_amount || '0.000000' }} USDT</p>
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Send Amount</p>
+                            <p class="mt-2 text-lg font-black">{{ formatMoney(selected.send_amount, selected.send_currency || 'USD') }}</p>
                         </div>
                         <div class="rounded-xl border border-slate-200 p-4">
-                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Recipient</p>
-                            <p class="mt-2 text-lg font-black">{{ selected.recipient_name }}</p>
-                            <p class="text-sm font-semibold text-slate-500">{{ selected.recipient_phone || 'No phone' }}</p>
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Destinator</p>
+                            <p class="mt-2 text-lg font-black">{{ selected.destinator_name }}</p>
+                            <p class="text-sm font-semibold text-slate-500">{{ selected.destinator_phone || 'No phone' }}</p>
                         </div>
                         <div class="rounded-xl border border-slate-200 p-4">
                             <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Agent</p>
                             <p class="mt-2 text-lg font-black">{{ selected.agent?.name || 'Not assigned' }}</p>
-                            <p class="text-sm font-semibold text-slate-500">{{ selected.recipient_location || 'No location' }}</p>
+                            <p class="text-sm font-semibold text-slate-500">{{ selected.agent?.phone || '' }}</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 p-4">
+                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Debt Status</p>
+                            <p class="mt-2 text-sm font-black">
+                                <span v-if="selected.requester_debt" class="text-amber-600">Requester debt</span>
+                                <span v-if="selected.requester_debt && selected.executor_debt" class="text-slate-400"> + </span>
+                                <span v-if="selected.executor_debt" class="text-orange-600">Executor debt</span>
+                                <span v-if="!selected.requester_debt && !selected.executor_debt" class="text-emerald-600">Clean</span>
+                            </p>
                         </div>
                     </div>
 
                     <div class="mt-6 grid gap-5 xl:grid-cols-3">
                         <form class="rounded-xl border border-slate-200 p-4" @submit.prevent="uploadUsdtProof">
-                            <h3 class="mb-3 text-sm font-black uppercase tracking-tight">USDT Screenshot</h3>
+                            <h3 class="mb-3 text-sm font-black uppercase tracking-tight">Requester Proof</h3>
+                            <p class="text-[10px] font-semibold text-slate-400 mb-3">Upload proof of payment from the requester</p>
                             <input type="file" accept="image/*,.pdf" @change="usdtProofFile = $event.target.files[0]" class="w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm font-semibold" />
-                            <textarea v-model="proofNotes" rows="2" placeholder="Proof notes" class="mt-3 w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold focus:border-emerald-500 focus:ring-emerald-500"></textarea>
-                            <a v-if="selected.usdt_proof_path" :href="proofUrl(selected.usdt_proof_path)" target="_blank" class="mt-3 inline-flex text-xs font-black uppercase tracking-widest text-emerald-700">View Current Proof</a>
-                            <button type="submit" :disabled="!usdtProofFile || selected.status === 'completed'" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-40">
-                                Upload USDT Proof
+                            <a v-if="selected.requester_proof_path" :href="proofUrl(selected.requester_proof_path)" target="_blank" class="mt-3 inline-flex text-xs font-black uppercase tracking-widest text-emerald-700">View Requester Proof</a>
+                            <p v-if="selected.requester_debt" class="mt-2 text-xs font-bold text-amber-600">⚠ Requester has outstanding debt</p>
+                            <button type="submit" :disabled="!usdtProofFile || selected.isClosed" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-40">
+                                Upload Requester Proof
                             </button>
                         </form>
 
-                        <form class="rounded-xl border border-slate-200 p-4" @submit.prevent="confirmUsdt">
-                            <h3 class="mb-3 text-sm font-black uppercase tracking-tight">Agent Receipt</h3>
-                            <textarea v-model="agentNotes" rows="5" placeholder="Agent notes" class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold focus:border-emerald-500 focus:ring-emerald-500"></textarea>
-                            <button type="submit" :disabled="!selected.usdt_proof_path || selected.status === 'usdt_received' || selected.status === 'completed'" class="mt-3 w-full rounded-xl bg-amber-500 px-4 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-40">
-                                Confirm USDT Received
+                        <div class="rounded-xl border border-slate-200 p-4">
+                            <h3 class="mb-3 text-sm font-black uppercase tracking-tight">Agent Actions</h3>
+                            <p class="text-[10px] font-semibold text-slate-400 mb-3">Accept, execute, or update the remittance</p>
+                            <button @click="markAccepted" :disabled="selected.status !== 'pending'"
+                                class="w-full rounded-xl bg-amber-500 px-4 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-40 mb-3">
+                                Mark Accepted
                             </button>
-                        </form>
+                            <button @click="markExecuted" :disabled="selected.status !== 'accepted'"
+                                class="w-full rounded-xl bg-indigo-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-40 mb-3">
+                                Mark Executed
+                            </button>
+                            <button @click="markCompleted" :disabled="selected.status !== 'executed'"
+                                class="w-full rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-40">
+                                Mark Completed
+                            </button>
+                        </div>
 
                         <form class="rounded-xl border border-slate-200 p-4" @submit.prevent="uploadPayoutProof">
-                            <h3 class="mb-3 text-sm font-black uppercase tracking-tight">Payout Proof</h3>
-                            <input v-model="payout.reference" placeholder="Payment reference" class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold focus:border-emerald-500 focus:ring-emerald-500" />
-                            <input v-model="payout.amount" type="number" min="0" step="0.01" placeholder="Payout amount" class="mt-3 w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold focus:border-emerald-500 focus:ring-emerald-500" />
+                            <h3 class="mb-3 text-sm font-black uppercase tracking-tight">Executor Proof</h3>
+                            <p class="text-[10px] font-semibold text-slate-400 mb-3">Upload payout proof from the agent</p>
+                            <input v-model="payout.reference" placeholder="Payout reference" class="w-full rounded-xl border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold focus:border-emerald-500 focus:ring-emerald-500" />
                             <input type="file" accept="image/*,.pdf" @change="payoutProofFile = $event.target.files[0]" class="mt-3 w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm font-semibold" />
-                            <a v-if="selected.payout_proof_path" :href="proofUrl(selected.payout_proof_path)" target="_blank" class="mt-3 inline-flex text-xs font-black uppercase tracking-widest text-emerald-700">View Payout Proof</a>
-                            <button type="submit" :disabled="selected.status !== 'usdt_received' || !payoutProofFile" class="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-40">
-                                Complete Transaction
+                            <a v-if="selected.executor_proof_path" :href="proofUrl(selected.executor_proof_path)" target="_blank" class="mt-3 inline-flex text-xs font-black uppercase tracking-widest text-emerald-700">View Executor Proof</a>
+                            <p v-if="selected.executor_debt" class="mt-2 text-xs font-bold text-orange-600">⚠ Executor has outstanding debt</p>
+                            <button type="submit" :disabled="!payoutProofFile || selected.isClosed" class="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-40">
+                                Upload Executor Proof
                             </button>
                         </form>
                     </div>
@@ -331,18 +359,19 @@ const payout = ref({
 });
 
 const statuses = [
-    { value: 'initiated', label: 'Initiated' },
-    { value: 'usdt_proof_submitted', label: 'USDT Proof Submitted' },
-    { value: 'usdt_received', label: 'USDT Received' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'accepted', label: 'Accepted' },
+    { value: 'executed', label: 'Executed' },
     { value: 'completed', label: 'Completed' },
+    { value: 'disputed', label: 'Disputed' },
     { value: 'cancelled', label: 'Cancelled' },
 ];
 
 const statCards = computed(() => [
     { label: 'Total', value: stats.value.total || 0, color: 'text-slate-900' },
-    { label: 'New', value: stats.value.initiated || 0, color: 'text-blue-600' },
-    { label: 'Needs Agent', value: stats.value.awaiting_agent || 0, color: 'text-amber-600' },
-    { label: 'Ready Payout', value: stats.value.ready_for_payout || 0, color: 'text-purple-600' },
+    { label: 'Pending', value: stats.value.pending || 0, color: 'text-sky-600' },
+    { label: 'Accepted', value: stats.value.accepted || 0, color: 'text-amber-600' },
+    { label: 'Executed', value: stats.value.executed || 0, color: 'text-indigo-600' },
     { label: 'Completed', value: stats.value.completed || 0, color: 'text-emerald-600' },
 ]);
 
@@ -520,6 +549,27 @@ const confirmUsdt = async () => {
     await refresh();
 };
 
+const markAccepted = async () => {
+    if (!selected.value) return;
+    const { data } = await api.patch(`/portal/transfers/${selected.value.id}/status`, { status: 'accepted' });
+    selected.value = data;
+    await refresh();
+};
+
+const markExecuted = async () => {
+    if (!selected.value) return;
+    const { data } = await api.patch(`/portal/transfers/${selected.value.id}/status`, { status: 'executed' });
+    selected.value = data;
+    await refresh();
+};
+
+const markCompleted = async () => {
+    if (!selected.value) return;
+    const { data } = await api.patch(`/portal/transfers/${selected.value.id}/status`, { status: 'completed' });
+    selected.value = data;
+    await refresh();
+};
+
 const uploadPayoutProof = async () => {
     if (!selected.value || !payoutProofFile.value) return;
 
@@ -559,10 +609,11 @@ const resetForm = () => {
 
 const statusMeta = (status) => {
     const map = {
-        initiated: { label: 'Initiated', class: 'bg-blue-100 text-blue-700' },
-        usdt_proof_submitted: { label: 'Needs Agent', class: 'bg-amber-100 text-amber-700' },
-        usdt_received: { label: 'Ready Payout', class: 'bg-purple-100 text-purple-700' },
+        pending: { label: 'Pending', class: 'bg-sky-100 text-sky-700' },
+        accepted: { label: 'Accepted', class: 'bg-amber-100 text-amber-700' },
+        executed: { label: 'Executed', class: 'bg-indigo-100 text-indigo-700' },
         completed: { label: 'Completed', class: 'bg-emerald-100 text-emerald-700' },
+        disputed: { label: 'Disputed', class: 'bg-rose-100 text-rose-700' },
         cancelled: { label: 'Cancelled', class: 'bg-slate-100 text-slate-600' },
     };
 

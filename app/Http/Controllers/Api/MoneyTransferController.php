@@ -54,10 +54,11 @@ class MoneyTransferController extends Controller
 
         return response()->json([
             'total' => MoneyTransfer::count(),
-            'initiated' => (int) ($statusCounts[MoneyTransfer::STATUS_INITIATED] ?? 0),
-            'awaiting_agent' => (int) ($statusCounts[MoneyTransfer::STATUS_USDT_PROOF_SUBMITTED] ?? 0),
-            'ready_for_payout' => (int) ($statusCounts[MoneyTransfer::STATUS_USDT_RECEIVED] ?? 0),
+            'pending' => (int) ($statusCounts[MoneyTransfer::STATUS_PENDING] ?? 0),
+            'accepted' => (int) ($statusCounts[MoneyTransfer::STATUS_ACCEPTED] ?? 0),
+            'executed' => (int) ($statusCounts[MoneyTransfer::STATUS_EXECUTED] ?? 0),
             'completed' => (int) ($statusCounts[MoneyTransfer::STATUS_COMPLETED] ?? 0),
+            'disputed' => (int) ($statusCounts[MoneyTransfer::STATUS_DISPUTED] ?? 0),
             'cancelled' => (int) ($statusCounts[MoneyTransfer::STATUS_CANCELLED] ?? 0),
             'send_volume' => MoneyTransfer::whereNotIn('status', [MoneyTransfer::STATUS_CANCELLED])->sum('send_amount'),
             'payout_volume' => MoneyTransfer::where('status', MoneyTransfer::STATUS_COMPLETED)->sum('payout_amount'),
@@ -311,6 +312,11 @@ class MoneyTransferController extends Controller
     {
         $data = $request->validate([
             'status' => ['required', Rule::in([
+                MoneyTransfer::STATUS_PENDING,
+                MoneyTransfer::STATUS_ACCEPTED,
+                MoneyTransfer::STATUS_EXECUTED,
+                MoneyTransfer::STATUS_COMPLETED,
+                MoneyTransfer::STATUS_DISPUTED,
                 MoneyTransfer::STATUS_CANCELLED,
             ])],
             'agent_notes' => ['nullable', 'string', 'max:2000'],
@@ -322,11 +328,20 @@ class MoneyTransferController extends Controller
 
         $oldStatus = $moneyTransfer->status;
 
-        DB::transaction(function () use ($moneyTransfer, $request, $data, $oldStatus) {
-            $moneyTransfer->update([
-                'status' => $data['status'],
+        $updatePayload = ['status' => $data['status']];
+
+        if ($data['status'] === MoneyTransfer::STATUS_ACCEPTED) {
+            $updatePayload['accepted_at'] = now();
+        } elseif ($data['status'] === MoneyTransfer::STATUS_EXECUTED) {
+            $updatePayload['executed_at'] = now();
+        } elseif ($data['status'] === MoneyTransfer::STATUS_COMPLETED) {
+            $updatePayload['completed_at'] = now();
+        }
+
+        DB::transaction(function () use ($moneyTransfer, $request, $data, $oldStatus, $updatePayload) {
+            $moneyTransfer->update(array_merge($updatePayload, [
                 'agent_notes' => $request->filled('agent_notes') ? $request->input('agent_notes') : $moneyTransfer->agent_notes,
-            ]);
+            ]));
 
             $this->recordEvent($moneyTransfer, 'status_changed', $oldStatus, $data['status'], [
                 'agent_notes' => $request->input('agent_notes'),

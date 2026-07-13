@@ -51,6 +51,8 @@ class MoneyTransfer extends Model
         'agent_notes',
     ];
 
+    protected $appends = ['isClosed'];
+
     protected $casts = [
         'send_amount' => 'decimal:2',
         'usdt_amount' => 'decimal:6',
@@ -121,6 +123,16 @@ class MoneyTransfer extends Model
     public function hasDebt(): bool
     {
         return $this->requester_debt || $this->executor_debt;
+    }
+
+    public function getIsClosedAttribute(): bool
+    {
+        return $this->isClosed();
+    }
+
+    public function getHasDebtAttribute(): bool
+    {
+        return $this->hasDebt();
     }
 
     protected static function booted(): void

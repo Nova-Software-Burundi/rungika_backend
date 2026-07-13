@@ -37,6 +37,9 @@
                         <option value="verified">Verified</option>
                         <option value="suspended">Suspended</option>
                     </select>
+                    <button @click="toggleAvailableAgents" :class="filters.available_agents ? 'bg-purple-600 text-white' : 'bg-slate-50 text-slate-600'" class="rounded-xl px-4 py-2 text-xs font-black border-none outline-none hover:bg-purple-100 transition">
+                        Available Agents
+                    </button>
                 </div>
             </div>
 
@@ -45,10 +48,10 @@
                 <thead class="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase border-b">
                     <tr>
                         <th class="p-5">User</th>
-                        <th class="p-5">Contact</th>
+                        <th class="p-5">Country</th>
                         <th class="p-5">Role</th>
                         <th class="p-5">KYC</th>
-                        <th class="p-5">Tier</th>
+                        <th class="p-5">Status</th>
                         <th class="p-5">Flags</th>
                         <th class="p-5 text-right">Actions</th>
                     </tr>
@@ -63,17 +66,26 @@
                                 <div>
                                     <p class="font-black text-slate-800 text-sm tracking-tight">{{ user.name }}</p>
                                     <p class="text-[10px] font-bold text-slate-400">{{ user.email }}</p>
+                                    <p class="text-[10px] font-semibold text-slate-400">{{ user.phone || '' }}</p>
                                 </div>
                             </div>
                         </td>
                         <td class="p-5">
-                            <p class="text-xs font-black text-slate-700">{{ user.phone || '—' }}</p>
+                            <div v-if="user.country">
+                                <img v-if="user.country.flag_url" :src="user.country.flag_url" class="w-5 h-3.5 inline-block mr-1.5 rounded-sm" />
+                                <span class="text-xs font-semibold text-slate-600">{{ user.country.name }}</span>
+                            </div>
+                            <span v-else class="text-xs text-slate-400">—</span>
+                            <p v-if="user.preferred_currency" class="text-[10px] font-bold text-slate-400 mt-0.5">{{ user.preferred_currency.code }}</p>
                         </td>
                         <td class="p-5">
-                            <span v-if="user.roles?.length" class="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest" :class="roleBadge(user.roles[0].name)">
-                                {{ user.roles[0].name }}
-                            </span>
-                            <span v-else class="text-xs font-bold text-slate-400">None</span>
+                            <div class="flex flex-col gap-1">
+                                <span v-if="user.roles?.length" class="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest w-fit" :class="roleBadge(user.roles[0].name)">
+                                    {{ user.roles[0].name }}
+                                </span>
+                                <span v-if="user.is_agent_available" class="text-[10px] font-bold text-emerald-600">Available</span>
+                                <span v-if="user.last_activity_at" class="text-[10px] text-slate-400">{{ timeAgo(user.last_activity_at) }}</span>
+                            </div>
                         </td>
                         <td class="p-5">
                             <span class="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest" :class="kycBadge(user.kyc_status)">
@@ -132,6 +144,18 @@
                     <span class="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest" :class="roleBadge(selectedUser.roles?.[0]?.name)">{{ selectedUser.roles?.[0]?.name || 'None' }}</span>
                 </div>
                 <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Country</p>
+                    <p v-if="selectedUser.country" class="font-bold text-sm text-slate-700">
+                        <img v-if="selectedUser.country.flag_url" :src="selectedUser.country.flag_url" class="w-5 h-3.5 inline-block mr-1.5 rounded-sm" />
+                        {{ selectedUser.country.name }}
+                    </p>
+                    <p v-else class="font-bold text-sm text-slate-400">—</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Preferred Currency</p>
+                    <p class="font-bold text-sm text-slate-700">{{ selectedUser.preferred_currency?.code || '—' }}</p>
+                </div>
+                <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">KYC Status</p>
                     <span class="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest" :class="kycBadge(selectedUser.kyc_status)">{{ selectedUser.kyc_status }}</span>
                 </div>
@@ -147,6 +171,15 @@
                 <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Trading</p>
                     <span class="rounded-full px-3 py-1 text-[10px] font-black uppercase" :class="selectedUser.trading_enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'">{{ selectedUser.trading_enabled ? 'Enabled' : 'Disabled' }}</span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Agent Status</p>
+                    <div v-if="selectedUser.roles?.[0]?.name === 'Agent'">
+                        <span v-if="selectedUser.is_agent_available" class="rounded-full px-3 py-1 text-[10px] font-black bg-emerald-100 text-emerald-700">Available</span>
+                        <span v-else class="rounded-full px-3 py-1 text-[10px] font-black bg-slate-100 text-slate-500">Unavailable</span>
+                        <p v-if="selectedUser.last_activity_at" class="text-[10px] text-slate-400 mt-1">Last active: {{ timeAgo(selectedUser.last_activity_at) }}</p>
+                    </div>
+                    <p v-else class="font-bold text-sm text-slate-400">—</p>
                 </div>
                 <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Avg Rating</p>
@@ -319,6 +352,23 @@ const fetchStats = async () => {
 
 const refresh = async () => {
     await Promise.all([fetchUsers(), fetchStats()]);
+};
+
+const toggleAvailableAgents = () => {
+    filters.value.available_agents = !filters.value.available_agents;
+    fetchUsers();
+};
+
+const timeAgo = (date) => {
+    if (!date) return '';
+    const ms = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs / 24);
+    return days + 'd ago';
 };
 
 const debouncedFetch = () => {

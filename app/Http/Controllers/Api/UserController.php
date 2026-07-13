@@ -12,10 +12,15 @@ class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = User::with('roles');
+        $query = User::with('roles', 'country', 'preferredCurrency');
 
         if ($request->filled('role')) {
-            $query->whereHas('roles', fn($q) => $q->where('name', $request->input('role')));
+            $query->whereHas('roles', fn($r) => $r->where('name', $request->input('role')));
+        }
+
+        if ($request->boolean('available_agents')) {
+            $query->whereHas('roles', fn($r) => $r->where('name', 'Agent'))
+                ->where('is_agent_available', true);
         }
 
         if ($request->filled('kyc_status')) {
@@ -38,7 +43,7 @@ class UserController extends Controller
 
     public function show(User $user): JsonResponse
     {
-        $user->load('roles');
+        $user->load('roles', 'country', 'preferredCurrency');
         $user->loadCount('ratingsReceived');
         $user->average_rating = round($user->averageRating() ?? 0, 1);
         return response()->json($user);
