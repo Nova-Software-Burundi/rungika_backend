@@ -146,7 +146,7 @@ Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(functio
 });
 
 // Protected Routes (Session-based via Vue Portal)
-Route::middleware(['auth', 'approved'])->group(function () {
+Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator'])->group(function () {
 
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -168,35 +168,42 @@ Route::middleware(['auth', 'approved'])->group(function () {
 
         // Country Management
         Route::get('/countries', [AdminCountryController::class, 'index']);
-        Route::post('/countries', [AdminCountryController::class, 'store']);
         Route::get('/countries/{country}', [AdminCountryController::class, 'show']);
-        Route::put('/countries/{country}', [AdminCountryController::class, 'update']);
-        Route::delete('/countries/{country}', [AdminCountryController::class, 'destroy']);
-        Route::post('/countries/seed', function () {
-            \Illuminate\Support\Facades\Artisan::call('countries:seed');
-            return response()->json(['message' => 'Countries seeded successfully.']);
-        })->name('countries.seed');
+        Route::middleware('permission:manage_countries')->group(function () {
+            Route::post('/countries', [AdminCountryController::class, 'store']);
+            Route::put('/countries/{country}', [AdminCountryController::class, 'update']);
+            Route::delete('/countries/{country}', [AdminCountryController::class, 'destroy']);
+            Route::post('/countries/seed', function () {
+                \Illuminate\Support\Facades\Artisan::call('countries:seed');
+                return response()->json(['message' => 'Countries seeded successfully.']);
+            })->name('countries.seed');
+        });
 
         // Currencies
         Route::get('/currencies', [CurrencyController::class, 'index']);
-        Route::post('/currencies', [CurrencyController::class, 'store']);
         Route::get('/currencies/{currency}', [CurrencyController::class, 'show']);
-        Route::put('/currencies/{currency}', [CurrencyController::class, 'update']);
-        Route::delete('/currencies/{currency}', [CurrencyController::class, 'destroy']);
         Route::get('/currencies/{currency}/exchange-rates', [CurrencyController::class, 'exchangeRates']);
-        Route::post('/exchange-rates', [CurrencyController::class, 'storeExchangeRate']);
-        Route::delete('/exchange-rates/{exchangeRate}', [CurrencyController::class, 'destroyExchangeRate']);
+        Route::middleware('permission:manage_currencies')->group(function () {
+            Route::post('/currencies', [CurrencyController::class, 'store']);
+            Route::put('/currencies/{currency}', [CurrencyController::class, 'update']);
+            Route::delete('/currencies/{currency}', [CurrencyController::class, 'destroy']);
+            Route::post('/exchange-rates', [CurrencyController::class, 'storeExchangeRate']);
+            Route::delete('/exchange-rates/{exchangeRate}', [CurrencyController::class, 'destroyExchangeRate']);
+        });
 
-        // User / Agent Management
+        // User / Agent Management (read routes open to all portal users)
         Route::get('/users/stats', [UserController::class, 'kycStats']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/users/{user}', [UserController::class, 'show']);
-        Route::post('/users/{user}/approve-kyc', [UserController::class, 'approveKyc']);
-        Route::post('/users/{user}/suspend', [UserController::class, 'suspend']);
-        Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole']);
-        Route::post('/users/{user}/kyc-tier', [UserController::class, 'setKycTier']);
-        Route::post('/users/{user}/flag', [UserController::class, 'flag']);
-        Route::post('/users/{user}/toggle-trading', [UserController::class, 'toggleTrading']);
+        // Write operations require manage_users permission
+        Route::middleware('permission:manage_users')->group(function () {
+            Route::post('/users/{user}/approve-kyc', [UserController::class, 'approveKyc']);
+            Route::post('/users/{user}/suspend', [UserController::class, 'suspend']);
+            Route::post('/users/{user}/assign-role', [UserController::class, 'assignRole']);
+            Route::post('/users/{user}/kyc-tier', [UserController::class, 'setKycTier']);
+            Route::post('/users/{user}/flag', [UserController::class, 'flag']);
+            Route::post('/users/{user}/toggle-trading', [UserController::class, 'toggleTrading']);
+        });
 
         // P2P Admin — Reference Data
         Route::get('/assets', [AdminAssetController::class, 'index']);
