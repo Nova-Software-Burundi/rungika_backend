@@ -28,6 +28,7 @@ const router = createRouter({
                 { path: "platform-fees",    name: "PlatformFees",    component: () => import("../pages/PlatformFees/Index.vue") },
                 { path: "reference-prices", name: "ReferencePrices", component: () => import("../pages/ReferencePrices/Index.vue") },
                 { path: "revenue",          name: "Revenue",         component: () => import("../pages/Revenue/Index.vue") },
+                { path: "reports",          name: "Reports",         component: () => import("../pages/Reports/Index.vue") },
                 { path: "ratings",          name: "Ratings",         component: () => import("../pages/Ratings/Index.vue") },
                 { path: "announcements",    name: "Announcements",   component: () => import("../pages/Announcements/Index.vue") },
                 { path: "support",         name: "Support",         component: () => import("../pages/Support/Index.vue") },

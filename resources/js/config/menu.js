@@ -1,6 +1,7 @@
 import {
     ArrowLeftRight,
     CircleDollarSign,
+    FileText,
     Globe,
     LifeBuoy,
     Settings,
@@ -25,6 +26,7 @@ export const menu = [
     { label: "Fees", icon: Coins, to: "/platform-fees" },
     { label: "Prices", icon: TrendingUp, to: "/reference-prices" },
     { label: "Revenue", icon: BarChart3, to: "/revenue" },
+    { label: "Reports", icon: FileText, to: "/reports" },
     { label: "Ratings", icon: Star, to: "/ratings" },
     { label: "Announcements", icon: Megaphone, to: "/announcements" },
     { label: "Support", icon: LifeBuoy, to: "/support" },

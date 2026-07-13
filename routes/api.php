@@ -32,6 +32,8 @@ use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementCo
 use App\Http\Controllers\Api\Admin\ExportController as AdminExportController;
 use App\Http\Controllers\Api\Admin\CountryController as AdminCountryController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Api\Mobile\ReportController as MobileReportController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -115,6 +117,10 @@ Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(functio
 
     // Remittance Support Tickets
     Route::post('/support/remittance-tickets', [MobileRemittanceTicketController::class, 'store']);
+
+    // Mobile Reports (User self-service)
+    Route::get('/reports/my-activity', [MobileReportController::class, 'myActivity']);
+    Route::get('/reports/my-activity/export', [MobileReportController::class, 'exportMyActivity']);
 
     // Agent Orders (Agent side)
     Route::get('/agent/orders', [MobileAgentOrderController::class, 'index']);
@@ -252,6 +258,18 @@ Route::middleware(['auth', 'approved'])->group(function () {
 
         // P2P Admin — Exports
         Route::get('/exports/trades', [AdminExportController::class, 'trades']);
+
+        // Reports
+        Route::prefix('reports')->group(function () {
+            Route::get('/remittances', [AdminReportController::class, 'remittances']);
+            Route::get('/remittances/export', [AdminReportController::class, 'exportRemittances']);
+            Route::get('/debts', [AdminReportController::class, 'debts']);
+            Route::get('/debts/export', [AdminReportController::class, 'exportDebts']);
+            Route::get('/agent-performance', [AdminReportController::class, 'agentPerformance']);
+            Route::get('/agent-performance/export', [AdminReportController::class, 'exportAgentPerformance']);
+            Route::get('/platform-summary', [AdminReportController::class, 'platformSummary']);
+            Route::get('/remittances/{moneyTransfer}/download', [AdminReportController::class, 'downloadRemittancePdf']);
+        });
 
         // Support System
         Route::prefix('support')->group(function () {
