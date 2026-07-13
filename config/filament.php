@@ -127,7 +127,7 @@ return [
     'middleware' => [
         'web',
         'auth',
-        '2fa', // apply your 2FA middleware globally to Filament
+        \App\Http\Middleware\EnsureTwoFactorAuth::class,
     ],
 
 ];

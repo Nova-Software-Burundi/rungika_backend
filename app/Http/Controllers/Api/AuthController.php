@@ -31,9 +31,17 @@ class AuthController extends Controller
             // Regenerate session to prevent fixation attacks
             $request->session()->regenerate();
 
+            $user = Auth::user();
+            $twoFactorRequired = !is_null($user->two_factor_confirmed_at);
+
             return response()->json([
-                'user'    => Auth::user(),
-                'message' => 'Authenticated via session'
+                'user'    => $user,
+                'message' => 'Authenticated via session',
+                'two_factor' => [
+                    'enabled' => $twoFactorRequired,
+                    'needs_setup' => is_null($user->two_factor_secret),
+                    'needs_challenge' => $twoFactorRequired,
+                ],
             ]);
         }
 

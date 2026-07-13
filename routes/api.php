@@ -155,7 +155,17 @@ Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator'])->grou
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::prefix('portal')->group(function () {
+    // 2FA setup/challenge routes — behind auth but NOT 2fa middleware
+    Route::prefix('portal/2fa')->group(function () {
+        Route::get('status', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'status']);
+        Route::post('setup', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'setup']);
+        Route::post('confirm', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'confirm']);
+        Route::post('challenge', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'challenge']);
+        Route::post('disable', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'disable']);
+    });
+
+    // All portal routes behind 2fa check
+    Route::prefix('portal')->middleware('2fa')->group(function () {
 
         // Money Transfer Workflow
         Route::get('/transfers/stats', [MoneyTransferController::class, 'stats']);

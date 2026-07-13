@@ -578,3 +578,62 @@ handle(Request):
 - **Session bridging** — `Auth::shouldUse('web')` + `Auth::loginUsingId()` makes Spatie middleware, `$request->user()`, and `Auth::user()` work identically
 - **Plaintext returned once** — database stores only SHA-256 hash
 - **IP allowlisting** — optional per-key restriction
+
+---
+
+## Phase 11: Enforce Two-Factor Authentication on Portal
+
+### Problem
+Portal login (`POST /api/portal/login`) bypasses Fortify's 2FA pipeline by calling `Auth::guard('web')->attempt()` directly, so users never see a TOTP challenge. No middleware enforces 2FA setup.
+
+### 11.1 Fix Fortify & Filament Config
+
+- Remove duplicate `Features::twoFactorAuthentication()` and `Features::resetPasswords()` entries in `config/fortify.php`
+- Replace non-existent `'2fa'` middleware alias in `config/filament.php` with actual middleware class
+
+### 11.2 `EnsureTwoFactorAuth` Middleware
+
+Applied to all `api/portal/*` routes. Logic:
+
+```
+if user has two_factor_confirmed_at:
+    if session 'two_factor_passed' flag is false:
+        → 403 { requires_2fa_challenge: true }
+    else:
+        → allow request
+else:
+    → 403 { requires_2fa_setup: true }
+```
+
+### 11.3 `TwoFactorController`
+
+Endpoints (all under `api/portal/2fa/*`, behind auth but not 2fa middleware):
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `status` | Returns whether 2FA is enabled/confirmed |
+| POST | `setup` | Generates TOTP secret via `pragmarx/google2fa`, returns QR URL + recovery codes |
+| POST | `confirm` | Verifies TOTP code, sets `two_factor_confirmed_at` |
+| POST | `challenge` | Verifies TOTP code, sets session `two_factor_passed` flag |
+| POST | `disable` | Requires current TOTP code to disable 2FA |
+
+### 11.4 Route Structure
+
+```
+POST /api/portal/login                          → public (no middleware)
+GET  /api/user, POST /api/logout                → auth + approved + role
+
+api/portal/2fa/*                                → auth + approved + role (NO 2fa middleware)
+  GET  /status
+  POST /setup
+  POST /confirm
+  POST /challenge
+  POST /disable
+
+api/portal/* (transfers, users, countries, etc.)  → auth + approved + role + 2fa
+```
+
+### 11.5 Security Fixes
+
+- Added `two_factor_secret` and `two_factor_recovery_codes` to User model's `$hidden` array to prevent leaking encrypted secrets in JSON responses.
+- `portalLogin()` response now includes `two_factor` status flags so the Vue frontend can conditionally redirect to 2FA setup/challenge pages.
