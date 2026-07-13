@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\Mobile\RatingController as MobileRatingController;
 use App\Http\Controllers\Api\Mobile\DeviceTokenController as MobileDeviceTokenController;
 use App\Http\Controllers\Api\Mobile\NotificationController as MobileNotificationController;
 use App\Http\Controllers\Api\Mobile\AgentController as MobileAgentController;
+use App\Http\Controllers\Api\Mobile\RemittanceController as MobileRemittanceController;
+use App\Http\Controllers\Api\Mobile\AgentOrderController as MobileAgentOrderController;
 use App\Http\Controllers\Api\Admin\AssetController as AdminAssetController;
 use App\Http\Controllers\Api\Admin\PaymentMethodController as AdminPaymentMethodController;
 use App\Http\Controllers\Api\Admin\AdvertisementController as AdminAdvertisementController;
@@ -100,6 +102,22 @@ Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(functio
     Route::post('/notifications/{id}/read', [MobileNotificationController::class, 'read']);
     Route::post('/notifications/read-all', [MobileNotificationController::class, 'readAll']);
     Route::get('/notifications/unread-count', [MobileNotificationController::class, 'unreadCount']);
+
+    // Remittances (Requester side)
+    Route::get('/remittances', [MobileRemittanceController::class, 'index']);
+    Route::post('/remittances', [MobileRemittanceController::class, 'store']);
+    Route::get('/remittances/{moneyTransfer}', [MobileRemittanceController::class, 'show']);
+    Route::post('/remittances/{moneyTransfer}/requester-proof', [MobileRemittanceController::class, 'uploadRequesterProof']);
+    Route::post('/remittances/{moneyTransfer}/confirm', [MobileRemittanceController::class, 'confirm']);
+    Route::post('/remittances/{moneyTransfer}/cancel', [MobileRemittanceController::class, 'cancel']);
+    Route::get('/remittances/debts/list', [MobileRemittanceController::class, 'debts']);
+
+    // Agent Orders (Agent side)
+    Route::get('/agent/orders', [MobileAgentOrderController::class, 'index']);
+    Route::get('/agent/orders/{moneyTransfer}', [MobileAgentOrderController::class, 'show']);
+    Route::post('/agent/orders/{moneyTransfer}/accept', [MobileAgentOrderController::class, 'accept']);
+    Route::post('/agent/orders/{moneyTransfer}/execute', [MobileAgentOrderController::class, 'execute']);
+    Route::post('/agent/orders/{moneyTransfer}/proof', [MobileAgentOrderController::class, 'uploadProof']);
 
     // Agent Marketplace
     Route::get('/agents', [MobileAgentController::class, 'index']);
