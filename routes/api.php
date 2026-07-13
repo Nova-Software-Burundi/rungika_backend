@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Mobile\NotificationController as MobileNotification
 use App\Http\Controllers\Api\Mobile\AgentController as MobileAgentController;
 use App\Http\Controllers\Api\Mobile\RemittanceController as MobileRemittanceController;
 use App\Http\Controllers\Api\Mobile\AgentOrderController as MobileAgentOrderController;
+use App\Http\Controllers\Api\Mobile\RemittanceTicketController as MobileRemittanceTicketController;
 use App\Http\Controllers\Api\Admin\AssetController as AdminAssetController;
 use App\Http\Controllers\Api\Admin\PaymentMethodController as AdminPaymentMethodController;
 use App\Http\Controllers\Api\Admin\AdvertisementController as AdminAdvertisementController;
@@ -111,6 +112,9 @@ Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(functio
     Route::post('/remittances/{moneyTransfer}/confirm', [MobileRemittanceController::class, 'confirm']);
     Route::post('/remittances/{moneyTransfer}/cancel', [MobileRemittanceController::class, 'cancel']);
     Route::get('/remittances/debts/list', [MobileRemittanceController::class, 'debts']);
+
+    // Remittance Support Tickets
+    Route::post('/support/remittance-tickets', [MobileRemittanceTicketController::class, 'store']);
 
     // Agent Orders (Agent side)
     Route::get('/agent/orders', [MobileAgentOrderController::class, 'index']);

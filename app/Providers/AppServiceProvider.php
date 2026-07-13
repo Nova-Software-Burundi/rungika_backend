@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\MoneyTransfer;
 use App\Models\Permission;
 use App\Models\Role;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 use PragmaRX\Google2FA\Google2FA;
 use App\Observers\RolePermissionObserver;
@@ -21,5 +23,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Role::observe(RolePermissionObserver::class);
         Permission::observe(RolePermissionObserver::class);
+
+        Relation::morphMap([
+            'money-transfer' => MoneyTransfer::class,
+        ]);
     }
 }

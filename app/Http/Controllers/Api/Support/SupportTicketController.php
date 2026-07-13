@@ -61,6 +61,7 @@ class SupportTicketController extends Controller
             'events.actor',
             'category',
             'assignee',
+            'subject',
         ]);
     }
 
@@ -86,6 +87,31 @@ class SupportTicketController extends Controller
             'type' => 'status_changed',
             'payload' => ['from' => $old, 'to' => $request->status],
         ]);
+
+        // When a remittance-linked ticket is resolved or closed, revert from disputed
+        if (in_array($request->status, ['resolved', 'closed'], true) && $ticket->subject_type === 'money-transfer') {
+            /** @var \App\Models\MoneyTransfer|null $remittance */
+            $remittance = $ticket->subject;
+
+            if ($remittance && $remittance->status === \App\Models\MoneyTransfer::STATUS_DISPUTED) {
+                $lastEvent = $remittance->events()
+                    ->where('type', 'disputed')
+                    ->latest()
+                    ->first();
+
+                $previousStatus = $lastEvent?->from_status ?? \App\Models\MoneyTransfer::STATUS_EXECUTED;
+
+                $remittance->update(['status' => $previousStatus]);
+
+                $remittance->events()->create([
+                    'user_id' => auth()->id(),
+                    'type' => 'dispute_resolved',
+                    'from_status' => \App\Models\MoneyTransfer::STATUS_DISPUTED,
+                    'to_status' => $previousStatus,
+                    'payload' => ['ticket_id' => $ticket->id],
+                ]);
+            }
+        }
 
         return $ticket;
     }

@@ -139,6 +139,11 @@
                             <p class="text-xs text-slate-500">#{{ activeTicket.reference }} &middot; {{ activeTicket.category?.name }} &middot; {{ activeTicket.user?.name }}</p>
                         </div>
                         <div class="flex items-center gap-2">
+                            <a v-if="activeTicket.subject_type === 'money-transfer' && activeTicket.subject"
+                               :href="`/transfers`"
+                               class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition flex items-center gap-1.5">
+                                <span class="text-[10px]">Transfer #{{ activeTicket.subject.reference }}</span>
+                            </a>
                             <select v-model="statusUpdate" @change="updateTicketStatus" class="text-xs border rounded-lg px-2 py-1.5 bg-white">
                                 <option value="open">Open</option>
                                 <option value="in_progress">In Progress</option>
