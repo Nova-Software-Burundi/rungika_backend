@@ -35,6 +35,12 @@ const router = createRouter({
                 { path: "settings",        name: "Settings",        component: () => import("../pages/Settings.vue") },
             ],
         },
+        {
+            path: "/2fa/setup",
+            name: "TwoFactorSetup",
+            component: () => import("../pages/Auth/TwoFactorSetup.vue"),
+            meta: { guestOnly: true }
+        },
         { path: "/:pathMatch(.*)*", redirect: "/login" },
     ],
 });

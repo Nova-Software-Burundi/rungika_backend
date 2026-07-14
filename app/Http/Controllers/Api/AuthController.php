@@ -173,7 +173,7 @@ class AuthController extends Controller
             $secret
         );
 
-        $qrCodeSvg = (new \PragmaRX\Google2FAQRCode\Google2FA())->getQRCodeSvg(
+        $qrCodeInline = (new \PragmaRX\Google2FAQRCode\Google2FA())->getQRCodeInline(
             config('app.name'),
             $user->email,
             $secret
@@ -181,7 +181,7 @@ class AuthController extends Controller
 
         return response()->json([
             'secret' => $secret,
-            'qr_code_svg' => $qrCodeSvg,
+            'qr_code_inline' => $qrCodeInline,
             'qr_code_url' => $qrCodeUrl,
             'recovery_codes' => $recoveryCodes,
         ]);
@@ -324,13 +324,13 @@ class AuthController extends Controller
         $google2fa = new \PragmaRX\Google2FAQRCode\Google2FA();
         $secret = decrypt($user->two_factor_secret);
 
-        $qrCodeSvg = $google2fa->getQRCodeSvg(
+        $qrCodeInline = \PragmaRX\Google2FAQRCode\Google2FA::getQRCodeInline(
             config('app.name'),
             $user->email,
             $secret
         );
 
-        return response()->json(['qr_code_svg' => $qrCodeSvg]);
+        return response()->json(['qr_code_inline' => $qrCodeInline]);
     }
 
     public function getRecoveryCodes(Request $request)
