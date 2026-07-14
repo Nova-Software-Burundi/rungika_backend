@@ -42,6 +42,14 @@ use Illuminate\Http\Request;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/portal/login', [AuthController::class, 'portalLogin']);
 
+// Public 2FA routes (temp_token-based, no auth middleware)
+Route::prefix('portal/2fa')->group(function () {
+    Route::post('verify', [AuthController::class, 'verifyTwoFactor']);
+    Route::post('recovery', [AuthController::class, 'verifyRecoveryCode']);
+    Route::post('setup-init', [AuthController::class, 'initSetup']);
+    Route::post('setup-confirm', [AuthController::class, 'confirmSetup']);
+});
+
 // Public Reference Data (no auth needed)
 Route::get('/countries', function () {
     return \App\Models\Country::where('is_active', true)->orderBy('name')->get();
@@ -147,7 +155,7 @@ Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(functio
 });
 
 // Protected Routes (Session-based via Vue Portal)
-Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator', '2fa'])->group(function () {
+Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator'])->group(function () {
 
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -155,16 +163,15 @@ Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator', '2fa']
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // 2FA setup/challenge routes — bypass 2fa middleware
-    Route::prefix('portal/2fa')->withoutMiddleware('2fa')->group(function () {
-        Route::get('status', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'status']);
-        Route::post('setup', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'setup']);
-        Route::post('confirm', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'confirm']);
-        Route::post('challenge', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'challenge']);
-        Route::post('disable', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'disable']);
-    });
-
     Route::prefix('portal')->group(function () {
+
+        // 2FA management for already-authenticated users
+        Route::post('2fa/enable', [AuthController::class, 'enableTwoFactor']);
+        Route::post('2fa/confirm-twofactor', [AuthController::class, 'confirmTwoFactor']);
+        Route::post('2fa/disable', [AuthController::class, 'disableTwoFactor']);
+        Route::get('2fa/qr', [AuthController::class, 'getTwoFactorQrCode']);
+        Route::get('2fa/recovery-codes', [AuthController::class, 'getRecoveryCodes']);
+        Route::post('2fa/recovery-codes/regenerate', [AuthController::class, 'regenerateRecoveryCodes']);
 
         // Money Transfer Workflow
         Route::get('/transfers/stats', [MoneyTransferController::class, 'stats']);

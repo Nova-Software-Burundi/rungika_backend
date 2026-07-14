@@ -48,6 +48,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'flagged' => 'boolean',
             'trading_enabled' => 'boolean',
             'password' => 'hashed',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
