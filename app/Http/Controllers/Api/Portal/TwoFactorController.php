@@ -15,6 +15,8 @@ class TwoFactorController extends Controller
         return response()->json([
             'enabled' => !is_null($user->two_factor_confirmed_at),
             'confirmed_at' => $user->two_factor_confirmed_at,
+            'pending_setup' => $request->session()->get('2fa_pending_setup', false),
+            'pending_challenge' => $request->session()->get('2fa_pending_challenge', false),
         ]);
     }
 
@@ -74,6 +76,8 @@ class TwoFactorController extends Controller
         ])->save();
 
         $request->session()->put('two_factor_passed', true);
+        $request->session()->forget('2fa_pending_setup');
+        $request->session()->forget('2fa_pending_challenge');
 
         return response()->json(['message' => 'Two-factor authentication enabled successfully.']);
     }
@@ -96,6 +100,8 @@ class TwoFactorController extends Controller
         }
 
         $request->session()->put('two_factor_passed', true);
+        $request->session()->forget('2fa_pending_setup');
+        $request->session()->forget('2fa_pending_challenge');
 
         return response()->json(['message' => 'Two-factor authentication verified.']);
     }

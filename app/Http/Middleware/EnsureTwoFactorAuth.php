@@ -15,19 +15,27 @@ class EnsureTwoFactorAuth
             return $next($request);
         }
 
-        if ($user->two_factor_confirmed_at) {
-            if (!$request->session()->get('two_factor_passed', false)) {
-                return response()->json([
-                    'message' => 'Two-factor authentication challenge required.',
-                    'requires_2fa_challenge' => true,
-                ], 403);
-            }
+        // Always allow 2FA setup/challenge endpoints
+        if ($request->is('api/portal/2fa*')) {
             return $next($request);
         }
 
-        return response()->json([
-            'message' => 'Two-factor authentication is required. Please set up 2FA before accessing the portal.',
-            'requires_2fa_setup' => true,
-        ], 403);
+        // If 2FA setup is pending, block everything else
+        if ($request->session()->get('2fa_pending_setup')) {
+            return response()->json([
+                'message' => 'Two-factor authentication setup required.',
+                'requires_2fa_setup' => true,
+            ], 403);
+        }
+
+        // If 2FA challenge is pending, block everything else
+        if ($request->session()->get('2fa_pending_challenge')) {
+            return response()->json([
+                'message' => 'Two-factor authentication challenge required.',
+                'requires_2fa_challenge' => true,
+            ], 403);
+        }
+
+        return $next($request);
     }
 }

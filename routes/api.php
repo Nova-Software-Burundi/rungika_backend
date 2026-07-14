@@ -147,7 +147,7 @@ Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(functio
 });
 
 // Protected Routes (Session-based via Vue Portal)
-Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator'])->group(function () {
+Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator', '2fa'])->group(function () {
 
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -155,8 +155,8 @@ Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator'])->grou
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // 2FA setup/challenge routes — behind auth but NOT 2fa middleware
-    Route::prefix('portal/2fa')->group(function () {
+    // 2FA setup/challenge routes — bypass 2fa middleware
+    Route::prefix('portal/2fa')->withoutMiddleware('2fa')->group(function () {
         Route::get('status', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'status']);
         Route::post('setup', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'setup']);
         Route::post('confirm', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'confirm']);
@@ -164,8 +164,7 @@ Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator'])->grou
         Route::post('disable', [\App\Http\Controllers\Api\Portal\TwoFactorController::class, 'disable']);
     });
 
-    // All portal routes behind 2fa check
-    Route::prefix('portal')->middleware('2fa')->group(function () {
+    Route::prefix('portal')->group(function () {
 
         // Money Transfer Workflow
         Route::get('/transfers/stats', [MoneyTransferController::class, 'stats']);

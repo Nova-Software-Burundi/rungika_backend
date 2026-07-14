@@ -32,16 +32,32 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-            $twoFactorRequired = !is_null($user->two_factor_confirmed_at);
+
+            // If 2FA is not yet confirmed, store a pending flag and signal the frontend
+            if (is_null($user->two_factor_confirmed_at)) {
+                $request->session()->put('2fa_pending_setup', true);
+
+                return response()->json([
+                    'user'     => $user,
+                    'message'  => 'Two-factor authentication setup required before accessing the portal.',
+                    'requires_2fa_setup' => true,
+                ]);
+            }
+
+            // 2FA is enabled but not yet passed for this session
+            if (!$request->session()->get('two_factor_passed', false)) {
+                $request->session()->put('2fa_pending_challenge', true);
+
+                return response()->json([
+                    'user'    => $user,
+                    'message' => 'Two-factor authentication challenge required.',
+                    'requires_2fa_challenge' => true,
+                ]);
+            }
 
             return response()->json([
                 'user'    => $user,
                 'message' => 'Authenticated via session',
-                'two_factor' => [
-                    'enabled' => $twoFactorRequired,
-                    'needs_setup' => is_null($user->two_factor_secret),
-                    'needs_challenge' => $twoFactorRequired,
-                ],
             ]);
         }
 
