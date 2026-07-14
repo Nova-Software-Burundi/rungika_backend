@@ -86,7 +86,10 @@ class AuthController extends Controller
         Auth::guard('web')->loginUsingId($user->id);
         $request->session()->regenerate();
 
-        return response()->json(['user' => $user]);
+        $userData = $user->toArray();
+        $userData['roles_list'] = $user->getRoleNames();
+
+        return response()->json(['user' => $userData]);
     }
 
     public function verifyRecoveryCode(Request $request)
@@ -111,27 +114,31 @@ class AuthController extends Controller
         }
 
         $codes = json_decode(decrypt($user->two_factor_recovery_codes), true);
-        $found = false;
+        $foundIndex = false;
 
-        foreach ($codes as $index => $validCode) {
-            if (hash_equals($validCode, $request->code)) {
-                unset($codes[$index]);
-                $user->forceFill([
-                    'two_factor_recovery_codes' => encrypt(json_encode(array_values($codes))),
-                ])->save();
-                $found = true;
+        foreach ($codes as $i => $rc) {
+            if (hash_equals($rc, $request->code)) {
+                $foundIndex = $i;
                 break;
             }
         }
 
-        if (!$found) {
+        if ($foundIndex === false) {
             return response()->json(['message' => 'Invalid recovery code.'], 422);
         }
+
+        unset($codes[$foundIndex]);
+        $user->forceFill([
+            'two_factor_recovery_codes' => encrypt(json_encode(array_values($codes))),
+        ])->save();
 
         Auth::guard('web')->loginUsingId($user->id);
         $request->session()->regenerate();
 
-        return response()->json(['user' => $user]);
+        $userData = $user->toArray();
+        $userData['roles_list'] = $user->getRoleNames();
+
+        return response()->json(['user' => $userData]);
     }
 
     public function initSetup(Request $request)
@@ -151,7 +158,11 @@ class AuthController extends Controller
         if ($user->hasEnabledTwoFactorAuthentication()) {
             Auth::guard('web')->loginUsingId($user->id);
             $request->session()->regenerate();
-            return response()->json(['user' => $user]);
+
+            $userData = $user->toArray();
+            $userData['roles_list'] = $user->getRoleNames();
+
+            return response()->json(['user' => $userData, 'message' => '2FA already active.']);
         }
 
         $google2fa = app('pragmarx.google2fa');
@@ -167,22 +178,10 @@ class AuthController extends Controller
             'two_factor_recovery_codes' => encrypt(json_encode($recoveryCodes)),
         ])->save();
 
-        $qrCodeUrl = $google2fa->getQRCodeUrl(
-            config('app.name'),
-            $user->email,
-            $secret
-        );
-
-        $qrCodeInline = (new \PragmaRX\Google2FAQRCode\Google2FA())->getQRCodeInline(
-            config('app.name'),
-            $user->email,
-            $secret
-        );
-
         return response()->json([
             'secret' => $secret,
-            'qr_code_inline' => $qrCodeInline,
-            'qr_code_url' => $qrCodeUrl,
+            'qr_code' => $user->twoFactorQrCodeSvg(),
+            'qr_code_url' => $user->twoFactorQrCodeUrl(),
             'recovery_codes' => $recoveryCodes,
         ]);
     }
@@ -222,7 +221,10 @@ class AuthController extends Controller
         Auth::guard('web')->loginUsingId($user->id);
         $request->session()->regenerate();
 
-        return response()->json(['user' => $user]);
+        $userData = $user->toArray();
+        $userData['roles_list'] = $user->getRoleNames();
+
+        return response()->json(['user' => $userData, 'message' => '2FA setup complete.']);
     }
 
     public function enableTwoFactor(Request $request)
@@ -324,13 +326,11 @@ class AuthController extends Controller
         $google2fa = new \PragmaRX\Google2FAQRCode\Google2FA();
         $secret = decrypt($user->two_factor_secret);
 
-        $qrCodeInline = \PragmaRX\Google2FAQRCode\Google2FA::getQRCodeInline(
-            config('app.name'),
-            $user->email,
-            $secret
-        );
-
-        return response()->json(['qr_code_inline' => $qrCodeInline]);
+        return response()->json([
+            'secret' => decrypt($user->two_factor_secret),
+            'qr_code' => $user->twoFactorQrCodeSvg(),
+            'qr_code_url' => $user->twoFactorQrCodeUrl(),
+        ]);
     }
 
     public function getRecoveryCodes(Request $request)
