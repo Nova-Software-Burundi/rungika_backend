@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -370,13 +371,32 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        $email = $request->input('email');
+        $password = $request->input('password');
+
+        Log::info('mobileLogin attempt', [
+            'email' => $email,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        if (!Auth::attempt(compact('email', 'password'))) {
+            Log::warning('mobileLogin failed', ['email' => $email]);
             return response()->json([
                 'message' => 'Invalid email or password'
             ], 401);
         }
 
         $user = Auth::user();
+
+        Log::info('mobileLogin success', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'has_kyc' => !is_null($user->kyc_verified_at),
+            'kyc_status' => $user->kyc_status,
+            'roles' => $user->getRoleNames(),
+        ]);
+
         $token = $user->createToken('mobile-auth')->plainTextToken;
 
         return response()->json([
