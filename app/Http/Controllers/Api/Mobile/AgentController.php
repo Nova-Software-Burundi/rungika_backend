@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Mobile;
 use App\Http\Controllers\Controller;
 use App\Models\MoneyTransfer;
 use App\Models\User;
+use App\Models\UserRating;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,9 @@ class AgentController extends Controller
         $query = User::role('Agent')
             ->with('country')
             ->withCount(['assignedMoneyTransfers as total_jobs'])
-            ->withAvg('ratingsReceived as average_rating')
+            ->addSelect(['average_rating' => UserRating::selectRaw('COALESCE(AVG(rating), 0)')
+                ->whereColumn('rated_user_id', 'users.id')
+            ])
             ->where('kyc_status', 'verified')
             ->where('flagged', false);
 
