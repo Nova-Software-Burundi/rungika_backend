@@ -64,7 +64,7 @@ class SupportTicketController extends Controller
             $ticket->load([
                 'category',
                 'messages.author:id,name',
-                'events.user:id,name',
+                'events.actor:id,name',
             ])
         );
     }
