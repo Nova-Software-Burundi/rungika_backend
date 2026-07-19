@@ -54,6 +54,13 @@ Route::prefix('portal/2fa')->group(function () {
 Route::get('/countries', function () {
     return \App\Models\Country::where('is_active', true)->orderBy('name')->get();
 });
+Route::get('/currencies', [CurrencyController::class, 'index']);
+
+// Mobile public data (no auth needed)
+Route::get('/mobile/countries', function () {
+    return \App\Models\Country::where('is_active', true)->orderBy('name')->get();
+});
+Route::get('/mobile/currencies', [CurrencyController::class, 'index']);
 
 // Mobile Auth Routes (public)
 Route::prefix('mobile/auth')->group(function () {
