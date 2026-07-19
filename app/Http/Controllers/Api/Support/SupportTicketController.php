@@ -10,7 +10,7 @@ class SupportTicketController extends Controller
 {
     public function index(Request $request)
     {
-        $query = SupportTicket::with(['category', 'assignee'])
+        $query = SupportTicket::with(['category', 'assignee', 'user'])
             ->latest();
 
         if (!auth()->user()->hasRole(['super_admin', 'Admin', 'Operator', 'Agent'])) {
@@ -61,6 +61,7 @@ class SupportTicketController extends Controller
             'events.actor',
             'category',
             'assignee',
+            'user',
             'subject',
         ]);
     }
