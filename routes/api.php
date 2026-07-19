@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\MoneyTransferController;
 use App\Http\Controllers\Api\Support\SupportCategoryController;
 use App\Http\Controllers\Api\Support\SupportTicketController;
 use App\Http\Controllers\Api\Support\SupportTicketMessageController;
+use App\Http\Controllers\Api\Mobile\SupportTicketController as MobileSupportTicketController;
 use App\Http\Controllers\Api\CurrencyController;
 use App\Http\Controllers\Api\Mobile\ProfileController as MobileProfileController;
 use App\Http\Controllers\Api\Mobile\TransferController as MobileTransferController;
@@ -131,7 +132,12 @@ Route::prefix('mobile')->middleware(['auth:sanctum', 'approved'])->group(functio
     Route::post('/remittances/{moneyTransfer}/cancel', [MobileRemittanceController::class, 'cancel']);
     Route::get('/remittances/debts/list', [MobileRemittanceController::class, 'debts']);
 
-    // Remittance Support Tickets
+    // Support Tickets (Mobile)
+    Route::get('/support/categories', [SupportCategoryController::class, 'index']);
+    Route::get('/support/tickets', [MobileSupportTicketController::class, 'index']);
+    Route::get('/support/tickets/{ticket}', [MobileSupportTicketController::class, 'show']);
+    Route::post('/support/tickets', [MobileSupportTicketController::class, 'store']);
+    Route::post('/support/tickets/{ticket}/messages', [MobileSupportTicketController::class, 'sendMessage']);
     Route::post('/support/remittance-tickets', [MobileRemittanceTicketController::class, 'store']);
 
     // Mobile Reports (User self-service)
