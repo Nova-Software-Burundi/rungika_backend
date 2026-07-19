@@ -111,6 +111,9 @@
                             <template v-else-if="col.key === 'average_rating'">
                                 <span class="text-sm">{{ row.average_rating || '—' }}</span>
                             </template>
+                            <template v-else-if="col.key === 'created_at'">
+                                <span class="text-sm text-slate-700">{{ formatDate(row.created_at) }}</span>
+                            </template>
                             <template v-else>
                                 <span class="text-sm text-slate-700">{{ row[col.key] || '—' }}</span>
                             </template>
@@ -276,6 +279,15 @@ function formatValue(key, val) {
     if (key.includes('rate')) return val + '%';
     if (key === 'total_agents' || key === 'active_agents' || key === 'total_remittances' || key === 'debts_count' || key === 'completed_count') return val;
     return val;
+}
+
+function formatDate(d) {
+    if (!d) return '—';
+    const date = new Date(d);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    });
 }
 
 function formatNumber(n) {
