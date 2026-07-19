@@ -22,8 +22,6 @@ class MoneyTransferController extends Controller
             'senderUser:id,name,email,phone',
             'recipientUser:id,name,email,phone',
             'agent:id,name,email',
-            'usdtConfirmer:id,name,email',
-            'payoutConfirmer:id,name,email',
         ])->latest();
 
         if ($request->filled('status')) {

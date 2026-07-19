@@ -190,6 +190,7 @@ class MobileAuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50', 'unique:users,phone'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
             'country_id' => ['nullable', 'integer', 'exists:countries,id'],
         ]);
 
@@ -198,7 +199,7 @@ class MobileAuthController extends Controller
                 'name' => $data['name'],
                 'phone' => $data['phone'],
                 'email' => $data['email'] ?? $data['phone'] . '@mobile.user',
-                'password' => Hash::make(str()->random(32)),
+                'password' => Hash::make($data['password']),
                 'kyc_status' => 'pending',
                 'country_id' => $data['country_id'] ?? null,
             ]);
