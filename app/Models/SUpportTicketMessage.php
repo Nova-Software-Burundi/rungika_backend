@@ -11,6 +11,7 @@ class SupportTicketMessage extends Model
         'support_ticket_id',
         'user_id',
         'message',
+        'attachment_path',
         'is_internal',
     ];
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class SupportTicketController extends Controller
 {
@@ -82,13 +83,20 @@ class SupportTicketController extends Controller
         }
 
         $data = $request->validate([
-            'message' => 'required|string|max:5000',
+            'message' => 'required_without:attachment|string|max:5000',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
 
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store('ticket-attachments', 'public');
+        }
+
         $message = $ticket->messages()->create([
-            'author_id' => $user->id,
-            'message' => $data['message'],
-            'is_staff' => false,
+            'user_id' => $user->id,
+            'message' => $data['message'] ?? '',
+            'attachment_path' => $attachmentPath,
+            'is_internal' => false,
         ]);
 
         return response()->json($message, 201);
