@@ -1,5 +1,3 @@
-<!-- resources/js/components/sidebar/SidebarItem.vue -->
-
 <script setup>
 import { ref } from "vue";
 import { useRoute } from "vue-router";
@@ -11,17 +9,19 @@ const props = defineProps({
 const route = useRoute();
 const open = ref(false);
 
-// auto-open if a child route is active
 if (
     props.item.children &&
     props.item.children.some(child => route.path.startsWith(child.to))
 ) {
     open.value = true;
 }
+
+const isActive = (to) => {
+    return route.path === to || route.path.startsWith(to + '/');
+};
 </script>
 
 <template>
-    <!-- Parent with children -->
     <div v-if="item.children">
         <button
             @click="open = !open"
@@ -40,19 +40,18 @@ if (
                 :key="i"
                 :to="child.to"
                 class="block px-3 py-2 text-sm rounded hover:bg-gray-100"
-                :class="{ 'bg-gray-200 font-semibold': route.path === child.to }"
+                :class="{ 'bg-gray-200 font-semibold': isActive(child.to) }"
             >
                 {{ child.label }}
             </router-link>
         </div>
     </div>
 
-    <!-- Simple link -->
     <router-link
         v-else
         :to="item.to"
         class="flex items-center px-3 py-2 rounded hover:bg-gray-100"
-        :class="{ 'bg-gray-200 font-semibold': route.path === item.to }"
+        :class="{ 'bg-gray-200 font-semibold': isActive(item.to) }"
     >
         <component :is="item.icon" class="w-5 h-5 mr-3" />
         <span>{{ item.label }}</span>

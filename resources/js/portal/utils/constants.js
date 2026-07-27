@@ -1,1 +1,1 @@
-export const APP_NAME = 'Martin Logistics Portal'
+export const APP_NAME = 'Rungika Remittance Portal'

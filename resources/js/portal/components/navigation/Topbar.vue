@@ -1,8 +1,8 @@
 <template>
     <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-40">
         <div class="flex-1">
-            <p class="text-xs font-black uppercase tracking-widest text-slate-400">Money Transfer Operations</p>
-            <p class="text-sm font-semibold text-slate-700">USDT receipt and payout desk</p>
+            <p class="text-xs font-black uppercase tracking-widest text-slate-400">Remittance Operations</p>
+            <p class="text-sm font-semibold text-slate-700">Agent Marketplace</p>
         </div>
 
         <div class="flex items-center gap-4">

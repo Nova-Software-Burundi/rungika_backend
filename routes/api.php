@@ -188,6 +188,7 @@ Route::middleware(['auth', 'approved', 'role:super_admin|Admin|Operator'])->grou
 
         // Money Transfer Workflow
         Route::get('/transfers/stats', [MoneyTransferController::class, 'stats']);
+        Route::get('/transfers/debts', [MoneyTransferController::class, 'debtsLedger']);
         Route::get('/transfers', [MoneyTransferController::class, 'index']);
         Route::post('/transfers', [MoneyTransferController::class, 'store']);
         Route::get('/transfers/{moneyTransfer}', [MoneyTransferController::class, 'show']);

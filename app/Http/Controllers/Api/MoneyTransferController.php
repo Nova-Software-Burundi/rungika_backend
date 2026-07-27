@@ -40,6 +40,12 @@ class MoneyTransferController extends Controller
             });
         }
 
+        if ($request->filled('has_debt')) {
+            $query->where(function ($q) {
+                $q->where('requester_debt', true)->orWhere('executor_debt', true);
+            });
+        }
+
         return response()->json($query->paginate((int) $request->get('per_page', 15)));
     }
 
@@ -49,6 +55,13 @@ class MoneyTransferController extends Controller
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
+
+        $debtTransfers = MoneyTransfer::where(function ($q) {
+            $q->where('requester_debt', true)->orWhere('executor_debt', true);
+        });
+
+        $totalClientOwes = (clone $debtTransfers)->where('executor_debt', true)->count();
+        $totalAgentOwes = (clone $debtTransfers)->where('requester_debt', true)->count();
 
         return response()->json([
             'total' => MoneyTransfer::count(),
@@ -60,7 +73,46 @@ class MoneyTransferController extends Controller
             'cancelled' => (int) ($statusCounts[MoneyTransfer::STATUS_CANCELLED] ?? 0),
             'send_volume' => MoneyTransfer::whereNotIn('status', [MoneyTransfer::STATUS_CANCELLED])->sum('send_amount'),
             'payout_volume' => MoneyTransfer::where('status', MoneyTransfer::STATUS_COMPLETED)->sum('payout_amount'),
+            'total_debts' => $totalClientOwes + $totalAgentOwes,
+            'client_owes_agent' => $totalClientOwes,
+            'agent_owes_client' => $totalAgentOwes,
         ]);
+    }
+
+    public function debtsLedger(Request $request): JsonResponse
+    {
+        $query = MoneyTransfer::with([
+            'initiator:id,name,email',
+            'senderUser:id,name,email,phone',
+            'recipientUser:id,name,email,phone',
+            'agent:id,name,email',
+        ])
+            ->where(function ($q) {
+                $q->where('requester_debt', true)->orWhere('executor_debt', true);
+            })
+            ->latest();
+
+        if ($request->filled('q')) {
+            $search = $request->input('q');
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery
+                    ->where('reference', 'like', "%{$search}%")
+                    ->orWhere('sender_name', 'like', "%{$search}%")
+                    ->orWhere('sender_phone', 'like', "%{$search}%")
+                    ->orWhere('recipient_name', 'like', "%{$search}%")
+                    ->orWhere('recipient_phone', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('debt_side')) {
+            if ($request->input('debt_side') === 'client') {
+                $query->where('executor_debt', true);
+            } elseif ($request->input('debt_side') === 'agent') {
+                $query->where('requester_debt', true);
+            }
+        }
+
+        return response()->json($query->paginate((int) $request->get('per_page', 15)));
     }
 
     public function store(Request $request): JsonResponse
