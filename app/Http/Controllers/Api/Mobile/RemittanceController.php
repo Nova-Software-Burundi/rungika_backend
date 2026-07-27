@@ -205,7 +205,7 @@ class RemittanceController extends Controller
         }
 
         $request->validate([
-            'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+            'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp,pdf', 'max:10240'],
         ]);
 
         $path = $request->file('proof')->store('remittance-proofs/requester', 'public');

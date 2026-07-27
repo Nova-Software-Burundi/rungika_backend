@@ -12,31 +12,31 @@ class NotificationService
 {
     public function send(User $user, string $title, string $body, array $data = []): void
     {
-        // Store in database notifications
-        $user->notifications()->create([
-            'id'   => (string) \Illuminate\Support\Str::uuid(),
-            'type' => 'App\Notifications\TradeNotification',
-            'data' => array_merge(['title' => $title, 'body' => $body], $data),
-        ]);
+        try {
+            $user->notifications()->create([
+                'id'   => (string) \Illuminate\Support\Str::uuid(),
+                'type' => 'App\Notifications\TradeNotification',
+                'data' => array_merge(['title' => $title, 'body' => $body], $data),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to store database notification: ' . $e->getMessage());
+        }
 
-        // Send FCM push notification with data payload
         $this->sendFcmPush($user, $title, $body, $data);
     }
 
-    /**
-     * Send a push notification with a data payload for deep linking.
-     * The mobile app's onMessageReceived() extracts type, remittance_id, ticket_id from data.
-     */
     public function sendWithData(User $user, string $title, string $body, array $data): void
     {
-        // Store in database notifications
-        $user->notifications()->create([
-            'id'   => (string) \Illuminate\Support\Str::uuid(),
-            'type' => 'App\Notifications\TradeNotification',
-            'data' => array_merge(['title' => $title, 'body' => $body], $data),
-        ]);
+        try {
+            $user->notifications()->create([
+                'id'   => (string) \Illuminate\Support\Str::uuid(),
+                'type' => 'App\Notifications\TradeNotification',
+                'data' => array_merge(['title' => $title, 'body' => $body], $data),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to store database notification: ' . $e->getMessage());
+        }
 
-        // Send FCM push — data payload is what the mobile app uses for deep linking
         $this->sendFcmPush($user, $title, $body, $data);
     }
 
@@ -53,11 +53,9 @@ class NotificationService
                 return;
             }
 
-            // Build data payload — all values must be strings for FCM data messages
             $dataPayload = array_merge(['title' => $title, 'body' => $body], $data);
             $dataPayload = array_map('strval', $dataPayload);
 
-            // Send to each token with both notification + data payload
             foreach ($tokens as $token) {
                 try {
                     $message = CloudMessage::withTarget('token', $token)
@@ -67,7 +65,6 @@ class NotificationService
                     $messaging->send($message);
                 } catch (\Throwable $e) {
                     Log::warning('FCM send failed for token: ' . $e->getMessage());
-                    // Remove invalid tokens
                     if (str_contains($e->getMessage(), 'NOT_FOUND') || str_contains($e->getMessage(), 'invalid')) {
                         DeviceToken::where('token', $token)->delete();
                     }

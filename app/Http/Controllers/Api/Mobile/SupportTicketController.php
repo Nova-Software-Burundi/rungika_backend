@@ -102,7 +102,7 @@ class SupportTicketController extends Controller
 
         $data = $request->validate([
             'message' => 'required_without:attachment|string|max:5000',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf|max:10240',
         ]);
 
         $attachmentPath = null;

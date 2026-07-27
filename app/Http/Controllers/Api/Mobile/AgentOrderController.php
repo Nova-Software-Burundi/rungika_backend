@@ -8,6 +8,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class AgentOrderController extends Controller
@@ -149,6 +150,33 @@ class AgentOrderController extends Controller
     {
         $user = $request->user();
 
+        $fileDetails = null;
+        if ($request->hasFile('proof')) {
+            $file = $request->file('proof');
+            $fileDetails = [
+                'client_name' => $file->getClientOriginalName(),
+                'client_mime' => $file->getClientOriginalMimeType(),
+                'client_size' => $file->getClientSize(),
+                'real_size'   => $file->getSize(),
+                'is_valid'    => $file->isValid(),
+                'error'       => $file->getError(),
+                'path'        => $file->getPathname(),
+            ];
+        }
+
+        Log::channel('stack')->info('AGENT ORDER EXECUTE REQUEST', [
+            'user_id'       => $user->id,
+            'transfer_id'   => $moneyTransfer->id,
+            'transfer_status' => $moneyTransfer->status,
+            'method'        => $request->method(),
+            'content_type'  => $request->header('Content-Type'),
+            'all_input'     => $request->except(['proof']),
+            'has_proof'     => $request->hasFile('proof'),
+            'file_details'  => $fileDetails,
+            'has_notes'     => $request->filled('notes'),
+            'has_ref'       => $request->filled('payout_reference'),
+        ]);
+
         if ($moneyTransfer->assigned_agent_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
@@ -157,18 +185,45 @@ class AgentOrderController extends Controller
             return response()->json(['message' => 'Order must be accepted before execution.'], 422);
         }
 
+        // Validate text fields only — handle proof manually to avoid 422
+        // when the client's multipart encoder sends a malformed file part
         $request->validate([
-            'proof'            => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
             'notes'            => ['nullable', 'string', 'max:2000'],
             'payout_reference' => ['nullable', 'string', 'max:255'],
         ]);
 
-        // Client-side validates that at least one is non-empty, but enforce server-side too
-        $hasNotes   = $request->filled('notes');
-        $hasRef     = $request->filled('payout_reference');
-        $hasProof   = $request->hasFile('proof');
+        // Manually check for a valid proof file (never let broken upload cause 422)
+        $proofFile = null;
+        if ($request->hasFile('proof')) {
+            $uploadedFile = $request->file('proof');
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+
+            if ($uploadedFile->isValid()
+                && in_array($uploadedFile->getMimeType(), $allowedMimes)
+                && $uploadedFile->getSize() <= 10 * 1024 * 1024
+            ) {
+                $proofFile = $uploadedFile;
+            } else {
+                Log::channel('stack')->warning('AGENT ORDER EXECUTE - PROOF FILE REJECTED', [
+                    'user_id'     => $user->id,
+                    'transfer_id' => $moneyTransfer->id,
+                    'is_valid'    => $uploadedFile->isValid(),
+                    'mime'        => $uploadedFile->getMimeType(),
+                    'size'        => $uploadedFile->getSize(),
+                    'error'       => $uploadedFile->getError(),
+                ]);
+            }
+        }
+
+        $hasNotes = $request->filled('notes');
+        $hasRef   = $request->filled('payout_reference');
+        $hasProof = $proofFile !== null;
 
         if (!$hasNotes && !$hasRef && !$hasProof) {
+            Log::channel('stack')->error('AGENT ORDER EXECUTE - NO CONTENT PROVIDED', [
+                'user_id'     => $user->id,
+                'transfer_id' => $moneyTransfer->id,
+            ]);
             return response()->json([
                 'message' => 'At least one of notes, payout_reference, or proof is required.',
             ], 422);
@@ -176,7 +231,7 @@ class AgentOrderController extends Controller
 
         $oldStatus = $moneyTransfer->status;
 
-        DB::transaction(function () use ($request, $moneyTransfer, $oldStatus, $user) {
+        DB::transaction(function () use ($request, $moneyTransfer, $oldStatus, $user, $proofFile) {
             $updateData = [
                 'status'           => MoneyTransfer::STATUS_EXECUTED,
                 'executed_at'      => now(),
@@ -184,8 +239,8 @@ class AgentOrderController extends Controller
                 'payout_reference' => $request->input('payout_reference', $moneyTransfer->payout_reference),
             ];
 
-            if ($request->hasFile('proof')) {
-                $path = $request->file('proof')->store('remittance-proofs/executor', 'public');
+            if ($proofFile) {
+                $path = $proofFile->store('remittance-proofs/executor', 'public');
                 $updateData['executor_proof_path'] = $path;
                 $updateData['executor_debt'] = false;
                 $updateData['executor_proof_uploaded_at'] = now();
@@ -201,8 +256,8 @@ class AgentOrderController extends Controller
                 'from_status' => $oldStatus,
                 'to_status' => MoneyTransfer::STATUS_EXECUTED,
                 'payload' => [
-                    'has_proof' => $request->hasFile('proof'),
-                    'is_debt'   => !$request->hasFile('proof'),
+                    'has_proof' => $proofFile !== null,
+                    'is_debt'   => $proofFile === null,
                     'notes'     => $request->input('notes'),
                 ],
             ]);
@@ -212,7 +267,7 @@ class AgentOrderController extends Controller
         if ($moneyTransfer->initiated_by) {
             $requester = \App\Models\User::find($moneyTransfer->initiated_by);
             if ($requester) {
-                $isDebt = !$request->hasFile('proof');
+                $isDebt = $proofFile === null;
                 $this->notificationService->sendWithData(
                     $requester,
                     'Order Executed',
@@ -253,7 +308,7 @@ class AgentOrderController extends Controller
         }
 
         $request->validate([
-            'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+            'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp,pdf', 'max:10240'],
         ]);
 
         $path = $request->file('proof')->store('remittance-proofs/executor', 'public');
