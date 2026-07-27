@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Models\MoneyTransfer;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 
 class RemittanceController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService) {}
     /**
      * List my remittances (as requester).
      */
@@ -37,7 +39,23 @@ class RemittanceController extends Controller
             });
         }
 
-        return response()->json($query->paginate((int) $request->get('per_page', 20)));
+        $paginated = $query->paginate((int) $request->get('per_page', 20));
+
+        $paginated->setCollection(
+            $paginated->getCollection()->map(function ($t) {
+                $data = $t->toArray();
+                if (isset($data['initiator'])) {
+                    $data['requester'] = $data['initiator'];
+                    unset($data['initiator']);
+                }
+                $data['destinator_payment_method_name'] = $t->paymentMethod?->name;
+                $data['agent_proof_path'] = $data['executor_proof_path'] ?? null;
+                $data['agent_debt'] = $data['executor_debt'] ?? false;
+                return $data;
+            })
+        );
+
+        return response()->json($paginated);
     }
 
     /**
@@ -102,6 +120,21 @@ class RemittanceController extends Controller
             return $transfer;
         });
 
+        // Notify the assigned agent
+        $agent = \App\Models\User::find($data['agent_id']);
+        if ($agent) {
+            $currency = $data['send_currency'] ?? 'USD';
+            $this->notificationService->sendWithData(
+                $agent,
+                'New Remittance Assigned',
+                "{$user->name} sent a remittance of {$data['send_amount']} {$currency} for {$data['destinator_name']}",
+                [
+                    'remittance_id' => (string) $transfer->id,
+                    'navigate_to_tab' => 'agent',
+                ]
+            );
+        }
+
         return response()->json(
             $transfer->load([
                 'initiator:id,name,phone',
@@ -120,19 +153,40 @@ class RemittanceController extends Controller
     {
         $user = $request->user();
 
-        if ($moneyTransfer->initiated_by !== $user->id) {
+        // Allow both requester and assigned agent
+        $isRequester = $moneyTransfer->initiated_by === $user->id;
+        $isAgent     = $moneyTransfer->assigned_agent_id === $user->id;
+
+        if (!$isRequester && !$isAgent) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        return response()->json(
-            $moneyTransfer->load([
-                'initiator:id,name,phone',
-                'agent:id,name,phone,agent_photo_path,last_activity_at',
-                'agent.country',
-                'paymentMethod:id,name',
-                'events.user:id,name',
-            ])
-        );
+        $moneyTransfer->load([
+            'initiator:id,name,phone',
+            'agent:id,name,phone,agent_photo_path,last_activity_at',
+            'agent.country',
+            'paymentMethod:id,name',
+            'events.user:id,name',
+        ]);
+
+        $data = $moneyTransfer->toArray();
+
+        // Map initiator → requester for mobile client
+        if (isset($data['initiator'])) {
+            $data['requester'] = $data['initiator'];
+            unset($data['initiator']);
+        }
+
+        // Flat payment method name
+        $data['destinator_payment_method_name'] = $moneyTransfer->paymentMethod?->name;
+
+        // Map executor fields → agent fields for client
+        $data['agent_proof_path'] = $data['executor_proof_path'] ?? null;
+        $data['agent_debt']       = $data['executor_debt'] ?? false;
+
+        $data['events'] = $moneyTransfer->events->sortBy('id')->map->toMobileArray()->values();
+
+        return response()->json($data);
     }
 
     /**
@@ -212,6 +266,22 @@ class RemittanceController extends Controller
             ]);
         });
 
+        // Notify the agent
+        if ($moneyTransfer->assigned_agent_id) {
+            $agent = \App\Models\User::find($moneyTransfer->assigned_agent_id);
+            if ($agent) {
+                $this->notificationService->sendWithData(
+                    $agent,
+                    'Order Confirmed',
+                    "{$user->name} confirmed completion of remittance {$moneyTransfer->reference}",
+                    [
+                        'remittance_id' => (string) $moneyTransfer->id,
+                        'navigate_to_tab' => 'agent',
+                    ]
+                );
+            }
+        }
+
         return response()->json(
             $moneyTransfer->fresh()->load(['events.user:id,name'])
         );
@@ -247,6 +317,22 @@ class RemittanceController extends Controller
                 'payload' => ['cancelled_by' => 'requester'],
             ]);
         });
+
+        // Notify the agent
+        if ($moneyTransfer->assigned_agent_id) {
+            $agent = \App\Models\User::find($moneyTransfer->assigned_agent_id);
+            if ($agent) {
+                $this->notificationService->sendWithData(
+                    $agent,
+                    'Order Cancelled',
+                    "{$user->name} cancelled remittance {$moneyTransfer->reference}",
+                    [
+                        'remittance_id' => (string) $moneyTransfer->id,
+                        'navigate_to_tab' => 'agent',
+                    ]
+                );
+            }
+        }
 
         return response()->json(
             $moneyTransfer->fresh()->load(['events.user:id,name'])

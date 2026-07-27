@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Models\MoneyTransfer;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,8 +12,18 @@ use Illuminate\Support\Facades\Storage;
 
 class AgentOrderController extends Controller
 {
+    private const TAB_STATUS_MAP = [
+        'new'     => [MoneyTransfer::STATUS_PENDING],
+        'active'  => [MoneyTransfer::STATUS_ACCEPTED],
+        'history' => [MoneyTransfer::STATUS_EXECUTED, MoneyTransfer::STATUS_COMPLETED],
+    ];
+
+    public function __construct(protected NotificationService $notificationService) {}
+
     /**
      * List orders assigned to this agent.
+     *
+     * Client sends: ?tab=new|active|history|debts&page=1
      */
     public function index(Request $request): JsonResponse
     {
@@ -24,26 +35,37 @@ class AgentOrderController extends Controller
 
         $query = MoneyTransfer::with([
             'initiator:id,name,phone',
+            'agent:id,name,phone',
             'paymentMethod:id,name',
         ])
             ->where('assigned_agent_id', $user->id)
             ->orderByDesc('created_at');
 
-        if ($request->filled('status')) {
+        // Tab-based filtering (client sends "tab" not "status")
+        if ($request->filled('tab')) {
+            $tab = $request->input('tab');
+
+            if (isset(self::TAB_STATUS_MAP[$tab])) {
+                $query->whereIn('status', self::TAB_STATUS_MAP[$tab]);
+            } elseif ($tab === 'debts') {
+                $query->where('executor_debt', true);
+            }
+        } elseif ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
 
-        if ($request->boolean('debt')) {
-            $query->where(function ($q) {
-                $q->where('requester_debt', true)->orWhere('executor_debt', true);
-            });
-        }
+        $paginated = $query->paginate((int) $request->get('per_page', 20));
 
-        return response()->json($query->paginate((int) $request->get('per_page', 20)));
+        // Transform items to match client field expectations
+        $paginated->setCollection(
+            $paginated->getCollection()->map(fn ($t) => $this->toMobileArray($t))
+        );
+
+        return response()->json($paginated);
     }
 
     /**
-     * Show order detail with full destinator info.
+     * Show order detail (agent's own orders only).
      */
     public function show(MoneyTransfer $moneyTransfer, Request $request): JsonResponse
     {
@@ -53,17 +75,21 @@ class AgentOrderController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        return response()->json(
-            $moneyTransfer->load([
-                'initiator:id,name,phone',
-                'paymentMethod:id,name',
-                'events.user:id,name',
-            ])
-        );
+        $moneyTransfer->load([
+            'initiator:id,name,phone',
+            'agent:id,name,phone',
+            'paymentMethod:id,name',
+            'events.user:id,name',
+        ]);
+
+        $data = $this->toMobileArray($moneyTransfer);
+        $data['events'] = $moneyTransfer->events->sortBy('id')->map->toMobileArray()->values();
+
+        return response()->json($data);
     }
 
     /**
-     * Accept an order (moves from pending to accepted).
+     * Accept an order (pending → accepted).
      */
     public function accept(Request $request, MoneyTransfer $moneyTransfer): JsonResponse
     {
@@ -93,13 +119,31 @@ class AgentOrderController extends Controller
             ]);
         });
 
-        return response()->json(
-            $moneyTransfer->fresh()->load(['events.user:id,name'])
-        );
+        // Notify requester
+        if ($moneyTransfer->initiated_by) {
+            $requester = \App\Models\User::find($moneyTransfer->initiated_by);
+            if ($requester) {
+                $this->notificationService->sendWithData(
+                    $requester,
+                    'Order Accepted',
+                    "Agent {$user->name} accepted your remittance of {$moneyTransfer->send_amount} {$moneyTransfer->send_currency}",
+                    [
+                        'remittance_id' => (string) $moneyTransfer->id,
+                        'navigate_to_tab' => 'remittance',
+                    ]
+                );
+            }
+        }
+
+        return response()->json(['message' => 'Order accepted successfully']);
     }
 
     /**
-     * Execute an order — mark as executed, optionally upload proof.
+     * Execute an order (accepted → executed).
+     * Accepts both application/json and multipart/form-data.
+     *
+     * Client sends field "notes" (not "agent_notes").
+     * At least one of notes / payout_reference / proof must be provided.
      */
     public function execute(Request $request, MoneyTransfer $moneyTransfer): JsonResponse
     {
@@ -114,18 +158,29 @@ class AgentOrderController extends Controller
         }
 
         $request->validate([
-            'proof' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
-            'agent_notes' => ['nullable', 'string', 'max:2000'],
+            'proof'            => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+            'notes'            => ['nullable', 'string', 'max:2000'],
             'payout_reference' => ['nullable', 'string', 'max:255'],
         ]);
+
+        // Client-side validates that at least one is non-empty, but enforce server-side too
+        $hasNotes   = $request->filled('notes');
+        $hasRef     = $request->filled('payout_reference');
+        $hasProof   = $request->hasFile('proof');
+
+        if (!$hasNotes && !$hasRef && !$hasProof) {
+            return response()->json([
+                'message' => 'At least one of notes, payout_reference, or proof is required.',
+            ], 422);
+        }
 
         $oldStatus = $moneyTransfer->status;
 
         DB::transaction(function () use ($request, $moneyTransfer, $oldStatus, $user) {
             $updateData = [
-                'status' => MoneyTransfer::STATUS_EXECUTED,
-                'executed_at' => now(),
-                'agent_notes' => $request->input('agent_notes', $moneyTransfer->agent_notes),
+                'status'           => MoneyTransfer::STATUS_EXECUTED,
+                'executed_at'      => now(),
+                'agent_notes'      => $request->input('notes', $moneyTransfer->agent_notes),
                 'payout_reference' => $request->input('payout_reference', $moneyTransfer->payout_reference),
             ];
 
@@ -147,15 +202,32 @@ class AgentOrderController extends Controller
                 'to_status' => MoneyTransfer::STATUS_EXECUTED,
                 'payload' => [
                     'has_proof' => $request->hasFile('proof'),
-                    'is_debt' => !$request->hasFile('proof'),
-                    'notes' => $request->input('agent_notes'),
+                    'is_debt'   => !$request->hasFile('proof'),
+                    'notes'     => $request->input('notes'),
                 ],
             ]);
         });
 
-        return response()->json(
-            $moneyTransfer->fresh()->load(['events.user:id,name'])
-        );
+        // Notify requester
+        if ($moneyTransfer->initiated_by) {
+            $requester = \App\Models\User::find($moneyTransfer->initiated_by);
+            if ($requester) {
+                $isDebt = !$request->hasFile('proof');
+                $this->notificationService->sendWithData(
+                    $requester,
+                    'Order Executed',
+                    $isDebt
+                        ? "Agent {$user->name} executed your remittance (proof pending)"
+                        : "Agent {$user->name} executed your remittance with proof",
+                    [
+                        'remittance_id' => (string) $moneyTransfer->id,
+                        'navigate_to_tab' => 'remittance',
+                    ]
+                );
+            }
+        }
+
+        return response()->json(['message' => 'Order executed successfully']);
     }
 
     /**
@@ -209,5 +281,36 @@ class AgentOrderController extends Controller
         return response()->json(
             $moneyTransfer->fresh()->load(['events.user:id,name'])
         );
+    }
+
+    /**
+     * Transform a MoneyTransfer to the format the mobile client expects.
+     *
+     * Maps internal field names to client field names:
+     *   initiator          → requester
+     *   executor_proof_path → agent_proof_path
+     *   executor_debt      → agent_debt
+     *   paymentMethod.name → destinator_payment_method_name
+     */
+    private function toMobileArray(MoneyTransfer $t): array
+    {
+        $data = $t->toArray();
+
+        // Alias: requester (client doesn't know "initiator")
+        if (isset($data['initiator'])) {
+            $data['requester'] = $data['initiator'];
+            unset($data['initiator']);
+        }
+
+        // Flat payment method name
+        $data['destinator_payment_method_name'] = $t->paymentMethod?->name;
+
+        // Alias: agent_proof_path (client doesn't know "executor_proof_path")
+        $data['agent_proof_path'] = $data['executor_proof_path'] ?? null;
+
+        // Alias: agent_debt (client doesn't know "executor_debt")
+        $data['agent_debt'] = $data['executor_debt'] ?? false;
+
+        return $data;
     }
 }

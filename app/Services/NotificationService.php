@@ -57,16 +57,14 @@ class NotificationService
             $dataPayload = array_merge(['title' => $title, 'body' => $body], $data);
             $dataPayload = array_map('strval', $dataPayload);
 
-            // Multicast to all user devices
-            $message = CloudMessage::withTarget('token', $tokens[0])
-                ->withData($dataPayload);
-
-            // Send to each token individually (FCM doesn't support true multicast in HTTP v1)
+            // Send to each token with both notification + data payload
             foreach ($tokens as $token) {
                 try {
-                    $messaging->send(
-                        CloudMessage::withTarget('token', $token)->withData($dataPayload)
-                    );
+                    $message = CloudMessage::withTarget('token', $token)
+                        ->withNotification(['title' => $title, 'body' => $body])
+                        ->withData($dataPayload);
+
+                    $messaging->send($message);
                 } catch (\Throwable $e) {
                     Log::warning('FCM send failed for token: ' . $e->getMessage());
                     // Remove invalid tokens

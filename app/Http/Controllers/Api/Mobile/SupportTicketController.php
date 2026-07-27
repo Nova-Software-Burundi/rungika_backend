@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class SupportTicketController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService) {}
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -46,6 +49,21 @@ class SupportTicketController extends Controller
             'user_id' => $user->id,
             'type' => 'created',
         ]);
+
+        // Notify admins
+        User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['super_admin', 'Admin']);
+        })->get()->each(function ($admin) use ($ticket, $user) {
+            $this->notificationService->sendWithData(
+                $admin,
+                'New Support Ticket',
+                "{$user->name} opened ticket #{$ticket->reference}: {$ticket->title}",
+                [
+                    'ticket_id' => (string) $ticket->id,
+                    'navigate_to_tab' => 'support',
+                ]
+            );
+        });
 
         return response()->json(
             $ticket->load('category'),
@@ -99,6 +117,21 @@ class SupportTicketController extends Controller
             'is_internal' => false,
         ]);
 
-        return response()->json($message, 201);
+        // Notify admins about new message
+        User::whereHas('roles', function ($q) {
+            $q->whereIn('name', ['super_admin', 'Admin']);
+        })->get()->each(function ($admin) use ($ticket, $user) {
+            $this->notificationService->sendWithData(
+                $admin,
+                'New Message on Ticket',
+                "{$user->name} replied to ticket #{$ticket->reference}",
+                [
+                    'ticket_id' => (string) $ticket->id,
+                    'navigate_to_tab' => 'support',
+                ]
+            );
+        });
+
+        return response()->json($message->load('author:id,name'), 201);
     }
 }

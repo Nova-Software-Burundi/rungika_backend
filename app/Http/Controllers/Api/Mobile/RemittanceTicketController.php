@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api\Mobile;
 use App\Http\Controllers\Controller;
 use App\Models\MoneyTransfer;
 use App\Models\SupportTicket;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class RemittanceTicketController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService) {}
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -73,6 +75,27 @@ class RemittanceTicketController extends Controller
 
             return $ticket;
         });
+
+        // Notify the other party (agent or requester) about the dispute
+        $otherPartyId = ($remittance->initiated_by === $user->id)
+            ? $remittance->assigned_agent_id
+            : $remittance->initiated_by;
+
+        if ($otherPartyId) {
+            $otherParty = \App\Models\User::find($otherPartyId);
+            if ($otherParty) {
+                $this->notificationService->sendWithData(
+                    $otherParty,
+                    'Dispute Opened',
+                    "{$user->name} opened a dispute for remittance {$remittance->reference}",
+                    [
+                        'remittance_id' => (string) $remittance->id,
+                        'ticket_id' => (string) $ticket->id,
+                        'navigate_to_tab' => 'remittance',
+                    ]
+                );
+            }
+        }
 
         return response()->json(
             $ticket->load(['category', 'subject']),

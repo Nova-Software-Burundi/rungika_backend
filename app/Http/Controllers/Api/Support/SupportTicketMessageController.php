@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Support;
 
 use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class SupportTicketMessageController extends Controller
@@ -35,6 +36,23 @@ class SupportTicketMessageController extends Controller
             'type' => 'message_added',
         ]);
 
-        return response()->json($message, 201);
+        // Notify ticket owner when staff sends a non-internal reply
+        if (!$request->boolean('is_internal') && $ticket->user_id) {
+            $ticketOwner = \App\Models\User::find($ticket->user_id);
+            if ($ticketOwner) {
+                $service = app(NotificationService::class);
+                $service->sendWithData(
+                    $ticketOwner,
+                    'Support Ticket Reply',
+                    auth()->user()->name . " replied to your ticket #{$ticket->reference}",
+                    [
+                        'ticket_id' => (string) $ticket->id,
+                        'navigate_to_tab' => 'support',
+                    ]
+                );
+            }
+        }
+
+        return response()->json($message->load('author:id,name'), 201);
     }
 }

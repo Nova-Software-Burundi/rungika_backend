@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\Support;
 
 use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class SupportTicketController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService) {}
     public function index(Request $request)
     {
         $query = SupportTicket::with(['category', 'assignee', 'user'])
@@ -111,6 +113,23 @@ class SupportTicketController extends Controller
                     'to_status' => $previousStatus,
                     'payload' => ['ticket_id' => $ticket->id],
                 ]);
+            }
+        }
+
+        // Notify ticket owner of status change
+        if ($ticket->user_id) {
+            $ticketOwner = \App\Models\User::find($ticket->user_id);
+            if ($ticketOwner) {
+                $statusLabel = ucfirst(str_replace('_', ' ', $request->status));
+                $this->notificationService->sendWithData(
+                    $ticketOwner,
+                    "Ticket {$statusLabel}",
+                    "Your ticket #{$ticket->reference} has been {$request->status}",
+                    [
+                        'ticket_id' => (string) $ticket->id,
+                        'navigate_to_tab' => 'support',
+                    ]
+                );
             }
         }
 
