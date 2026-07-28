@@ -50,6 +50,6 @@
             @endforeach
         </tbody>
     </table>
-    <div class="footer">Rungika Platform &mdash; Remittance Report</div>
+    <div class="footer">{{ config('app-custom.brand_name') }} Platform &mdash; Remittance Report</div>
 </body>
 </html>

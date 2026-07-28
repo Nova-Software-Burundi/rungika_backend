@@ -19,7 +19,7 @@
         </nav>
 
         <div class="p-4 border-t border-gray-200 text-sm text-gray-500">
-            (c) {{ new Date().getFullYear() }} Rungika
+            (c) {{ new Date().getFullYear() }} {{ brandName }}
         </div>
     </aside>
 </template>
@@ -28,4 +28,6 @@
 import { menu } from "@/config/menu.js";
 import SidebarItem from "./SidebarItem.vue";
 import { Banknote } from "lucide-vue-next";
+
+const brandName = import.meta.env.VITE_APP_NAME || 'Rungika';
 </script>

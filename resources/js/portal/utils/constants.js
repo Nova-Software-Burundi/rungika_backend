@@ -1,1 +1,1 @@
-export const APP_NAME = 'Rungika Remittance Portal'
+export const APP_NAME = `${import.meta.env.VITE_APP_NAME || 'Rungika'} Remittance Portal`

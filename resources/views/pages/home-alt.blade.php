@@ -60,7 +60,7 @@
     <section class="bg-gray-100 py-20 px-6">
         <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
             <div>
-                <h2 class="text-3xl font-bold text-[#222222] mb-6">Why Rungika?</h2>
+                <h2 class="text-3xl font-bold text-[#222222] mb-6">Why {{ config('app-custom.brand_name') }}?</h2>
                 <ul class="space-y-4 text-gray-700">
                     <li>✅ 24/7 live support</li>
                     <li>✅ Real-time transfer status updates</li>

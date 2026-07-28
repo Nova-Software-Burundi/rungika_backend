@@ -52,7 +52,7 @@ return [
         'tin' => env('FINES_TIN'),
         'referer' => env('FINES_REFERER'),
         'rpk' => env('FINES_RPK'),
-        'user_agent' => env('FINES_USER_AGENT'),
+        'user_agent' => env('FINES_USER_AGENT', config('app-custom.fines_user_agent')),
         'newrelic' => env('FINES_NEWRELIC'),
         'nls' => env('FINES_NLS'),
     ],

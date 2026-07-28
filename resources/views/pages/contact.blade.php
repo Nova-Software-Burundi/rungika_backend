@@ -36,12 +36,12 @@
         <div class="space-y-6">
             <div class="p-6 bg-[#222222] text-white rounded-lg">
                 <h3 class="text-xl font-bold mb-2">Our Office</h3>
-                <p>Zindiro Area<br>Kigali, Rwanda</p>
+                <p>{!! nl2br(e(config('app-custom.physical_address'))) !!}</p>
             </div>
             <div class="p-6 border rounded-lg shadow">
                 <h3 class="text-xl font-bold mb-2">Contact Information</h3>
-                <p>Email: <a href="mailto:info@rungika.com" class="text-[#dc3534]">info@rungika.com</a></p>
-                <p>Phone: +250 79 123 456</p>
+                <p>Email: <a href="mailto:{{ config('app-custom.support_email') }}" class="text-[#dc3534]">{{ config('app-custom.support_email') }}</a></p>
+                <p>Phone: {{ config('app-custom.support_phone') }}</p>
             </div>
         </div>
     </div>

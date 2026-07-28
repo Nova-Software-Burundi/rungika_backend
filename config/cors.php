@@ -24,23 +24,9 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        // Your primary Herd/Valet domain
-        'https://martin-logistics.test',
-        'http://martin-logistics.test',
-
-        // Vite Dev Server (Standard ports)
-        'http://localhost:5173',
-        'https://localhost:5173',
-        'http://127.0.0.1:5173',
-        'https://127.0.0.1:5173',
-
-        // The specific Vite host from your .env
-        'https://vite.martin-logistics.test',
-        // PRODUCTION
-        'https://martin-logistics.nova.bi',
-        'https://www.martin-logistics.nova.bi',
-    ],
+    'allowed_origins' => array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS',
+        'https://rungika.nova.bi,http://localhost:5173,https://localhost:5173,http://127.0.0.1:5173,https://127.0.0.1:5173'
+    )))),
 
     'allowed_origins_patterns' => [],
 
@@ -48,7 +34,7 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 86400,
 
     // CRITICAL: This must be true to allow cookies/sessions
     'supports_credentials' => true,

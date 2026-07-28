@@ -4,7 +4,7 @@
     <section class="text-center mb-16">
         <h1 class="text-3xl font-extrabold text-[#222222] mb-4">Our Services</h1>
         <p class="text-lg text-gray-600">
-            Rungika offers fast, secure, and affordable money transfer and crypto trading services across Africa.
+            {{ config('app-custom.brand_name') }} offers fast, secure, and affordable money transfer and crypto trading services across Africa.
         </p>
     </section>
 

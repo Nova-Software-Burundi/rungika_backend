@@ -80,7 +80,7 @@
     @endif
 
     <div class="footer">
-        Rungika Platform &mdash; Generated {{ now()->format('Y-m-d H:i') }}
+        {{ config('app-custom.brand_name') }} Platform &mdash; Generated {{ now()->format('Y-m-d H:i') }}
     </div>
 </body>
 </html>

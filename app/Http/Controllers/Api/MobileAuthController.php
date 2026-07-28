@@ -48,12 +48,12 @@ class MobileAuthController extends Controller
         // Store hash in DB
         $contact->update([
             'verification_code' => Hash::make($plainCode),
-            'code_expires_at'   => now()->addMinutes(10),
+            'code_expires_at'   => now()->addMinutes(config('app-custom.otp_expiry_minutes')),
         ]);
 
         // Lock for 5 mins to prevent spam/costs
-        Cache::put($cacheKey, true, now()->addMinutes(5));
-        Cache::put('otp_code_' . $contact->id, $plainCode, now()->addMinutes(10)); // Just for dev logging
+        Cache::put($cacheKey, true, now()->addMinutes(config('app-custom.otp_lock_minutes')));
+        Cache::put('otp_code_' . $contact->id, $plainCode, now()->addMinutes(config('app-custom.otp_expiry_minutes')));
 
         try {
             $client = new Client(
@@ -65,7 +65,7 @@ class MobileAuthController extends Controller
                 "whatsapp:{$contact->value}",
                 [
                     'from' => config('services.twilio.whatsapp_from'),
-                    'body' => "Your Martin Logistics verification code is {$plainCode}. It expires in 10 minutes.",
+                    'body' => "Your " . config('app-custom.brand_name') . " verification code is {$plainCode}. It expires in " . config('app-custom.otp_expiry_minutes') . " minutes.",
                 ]
             );
         } catch (\Throwable $e) {
@@ -145,7 +145,7 @@ class MobileAuthController extends Controller
         }
 
         // For local dev/testing cost control, we can bypass actual Firebase check if a secret token is used
-        if (!App::environment('production') && $request->idToken === 'TEST_BYPASS_TOKEN_123') {
+        if (!App::environment('production') && config('app-custom.otp_bypass_token') && $request->idToken === config('app-custom.otp_bypass_token')) {
             Log::info("[DEV/TEST] Bypassed Firebase verification for {$contact->value}");
             $contact->update(['verified_at' => now()]);
             return response()->json([
@@ -198,7 +198,7 @@ class MobileAuthController extends Controller
             $user = User::create([
                 'name' => $data['name'],
                 'phone' => $data['phone'],
-                'email' => $data['email'] ?? $data['phone'] . '@mobile.user',
+                'email' => $data['email'] ?? $data['phone'] . '@' . config('app-custom.auto_email_domain'),
                 'password' => Hash::make($data['password']),
                 'kyc_status' => 'pending',
                 'country_id' => $data['country_id'] ?? null,

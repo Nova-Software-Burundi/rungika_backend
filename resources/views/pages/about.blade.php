@@ -2,7 +2,7 @@
 
 @section('content')
     <section class="text-center mb-16">
-        <h1 class="text-3xl font-extrabold text-[#222222] mb-4">About Rungika</h1>
+        <h1 class="text-3xl font-extrabold text-[#222222] mb-4">About {{ config('app-custom.brand_name') }}</h1>
         <p class="text-lg text-gray-600">
             We are committed to providing fast, secure money transfer services that connect people and businesses across borders.
         </p>

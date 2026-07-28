@@ -213,7 +213,7 @@ class SeedCountries extends Command
 
         $count = 0;
         foreach ($countries as $country) {
-            $country['flag_url'] = "https://flagcdn.com/w80/{$country['code']}.png";
+            $country['flag_url'] = config('app-custom.flag_cdn_url') . "/{$country['code']}.png";
             Country::updateOrCreate(
                 ['code' => $country['code']],
                 $country

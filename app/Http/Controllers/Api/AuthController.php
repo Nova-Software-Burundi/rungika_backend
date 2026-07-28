@@ -40,7 +40,7 @@ class AuthController extends Controller
         if ($user->hasEnabledTwoFactorAuthentication()) {
             $tempToken = Crypt::encrypt([
                 'user_id' => $user->id,
-                'expires_at' => now()->addMinutes(5)->timestamp,
+                'expires_at' => now()->addMinutes(config('app-custom.twofactor_temp_token_minutes'))->timestamp,
             ]);
 
             return response()->json([
@@ -51,7 +51,7 @@ class AuthController extends Controller
 
         $tempToken = Crypt::encrypt([
             'user_id' => $user->id,
-            'expires_at' => now()->addMinutes(10)->timestamp,
+            'expires_at' => now()->addMinutes(config('app-custom.twofactor_setup_token_minutes'))->timestamp,
         ]);
 
         return response()->json([

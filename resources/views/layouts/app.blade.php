@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rungika — Send & Receive Money Across Africa</title>
+    <title>{{ config('app-custom.brand_name') }} — {{ config('app-custom.brand_tagline') }}</title>
     @vite('resources/css/app.css')
 </head>
 <body class="bg-white text-gray-900">

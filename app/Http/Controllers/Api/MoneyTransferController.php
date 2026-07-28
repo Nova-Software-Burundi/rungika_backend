@@ -148,7 +148,7 @@ class MoneyTransferController extends Controller
                 $user = User::create([
                     'name' => $data['sender_name'],
                     'phone' => $data['sender_phone'],
-                    'email' => 'sender-' . now()->format('YmdHis') . '-' . mt_rand(1000, 9999) . '@rungika.app',
+                    'email' => 'sender-' . now()->format('YmdHis') . '-' . mt_rand(1000, 9999) . '@' . config('app-custom.auto_email_domain'),
                     'password' => Hash::make(str()->random(32)),
                     'kyc_status' => 'pending',
                 ]);
@@ -186,7 +186,7 @@ class MoneyTransferController extends Controller
                 $user = User::create([
                     'name' => $data['recipient_name'],
                     'phone' => $data['recipient_phone'],
-                    'email' => 'recipient-' . now()->format('YmdHis') . '-' . mt_rand(1000, 9999) . '@rungika.app',
+                    'email' => 'recipient-' . now()->format('YmdHis') . '-' . mt_rand(1000, 9999) . '@' . config('app-custom.auto_email_domain'),
                     'password' => Hash::make(str()->random(32)),
                     'kyc_status' => 'pending',
                 ]);

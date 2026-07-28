@@ -14,7 +14,7 @@ class FinesApiService
             'tin' => config('services.fines.tin'),
             'referer' => config('services.fines.referer'),
             'rpk' => config('services.fines.rpk'),
-            'User-Agent' => config('services.fines.user_agent') ?: 'MartinLogistics/1.0',
+            'User-Agent' => config('services.fines.user_agent') ?: config('app-custom.fines_user_agent'),
             'PlateNumber' => $plate,
             'newrelic' => config('services.fines.newrelic'),
             'nls' => config('services.fines.nls'),
